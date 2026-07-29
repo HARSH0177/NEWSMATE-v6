@@ -854,8 +854,7 @@ async function fetchViaMCP(queries){
 async function go(){
   const _startTime = Date.now();
   const claim=document.getElementById('claim').value.trim();
-  if(!claim){showA('📝 Please enter a news claim to verify.','warn');return;}
-  if(!G()){showA('🔑 <b>Gemini API key required.</b> Click <b>⚙️</b> (bottom-right) to add your free key from <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>');return;}
+  if(!G() && !MCP()){showA('🔑 <b>Gemini API key required.</b> Click <b>⚙️</b> (bottom-right) to add your free key from <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>');return;}
 
   hideA();
   const btn=document.getElementById('vBtn');btn.disabled=true;btn.classList.add('loading');
