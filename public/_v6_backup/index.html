@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewsMate V6 | Advanced AI Fake News Detector</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Markdown parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  
+  <div class="app-container">
+    
+    <!-- Sidebar: Settings & History -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1><i class="fa-solid fa-shield-halved text-emerald"></i> NewsMate <span class="badge">V6</span></h1>
+      </div>
+
+      <div class="sidebar-section">
+        <h3><i class="fa-solid fa-gear"></i> Settings</h3>
+        <button id="btn-settings" class="btn-outline w-full"><i class="fa-solid fa-key"></i> API Keys & Config</button>
+      </div>
+
+      <div class="sidebar-section flex-1">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> History</h3>
+        <div id="history-list" class="history-list">
+          <!-- History items injected here -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <!-- Top header -->
+      <header class="topbar">
+        <div class="status-indicators">
+          <div class="status-pill server-ok" id="status-server" title="MCP Server"><i class="fa-solid fa-server"></i> Server</div>
+          <div class="status-pill info" id="status-mcp" title="News Sources"><i class="fa-solid fa-newspaper"></i> Sources</div>
+        </div>
+      </header>
+
+      <!-- Input Area -->
+      <section class="input-section">
+        <h2>Verify any claim, news, or rumor</h2>
+        
+        <div class="input-container">
+          <textarea id="claim-input" placeholder="Paste a headline, tweet, or claim here..." rows="3"></textarea>
+          
+          <!-- Image Upload Preview -->
+          <div id="image-preview-container" class="hidden mb-4 relative inline-block">
+            <img id="image-preview" src="" alt="Uploaded image" style="max-height: 150px; border-radius: 8px; border: 1px solid var(--border);">
+            <button id="btn-remove-image" class="absolute top-1 right-1 bg-rose text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer" style="position: absolute; top: -10px; right: -10px; border: none; font-size: 12px;"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div class="input-actions x-flex justify-between w-full">
+            <div>
+              <input type="file" id="image-upload" accept="image/*" class="hidden" style="display:none;">
+              <button id="btn-upload" class="btn-outline text-sm" onclick="document.getElementById('image-upload').click()"><i class="fa-solid fa-image"></i> Add Image</button>
+            </div>
+            <button id="btn-verify" class="btn-primary"><i class="fa-solid fa-magnifying-glass"></i> VERIFY NOW</button>
+          </div>
+        </div>
+
+        <div class="trending-claims">
+          <span class="text-sm text-dim">Trending examples:</span>
+          <div class="pills-container" id="trending-pills">
+            <button class="pill" onclick="insertClaim(this)">Iran supreme leader dead in us israel strike</button>
+            <button class="pill" onclick="insertClaim(this)">Climate change causes extreme weather events</button>
+            <button class="pill" onclick="insertClaim(this)">COVID-19 vaccines contain microchips</button>
+            <button class="pill" onclick="insertClaim(this)">WHO declares new global health emergency</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Area (Hidden until verify) -->
+      <section id="results-area" class="results-area hidden">
+        
+        <!-- Pipeline Progress -->
+        <div class="pipeline-card card">
+          <h3><i class="fa-solid fa-network-wired"></i> AI Reasoning Pipeline</h3>
+          <div class="pipeline-steps">
+            <div class="step" id="step-1">
+              <div class="step-icon"><i class="fa-solid fa-brain"></i></div>
+              <div class="step-info">
+                <h4>Claim Decomposer</h4>
+                <p>Analyzing risk & generating angles</p>
+                <div class="step-output" id="out-step-1"></div>
+              </div>
+            </div>
+            <div class="step" id="step-2">
+              <div class="step-icon"><i class="fa-solid fa-globe"></i></div>
+              <div class="step-info">
+                <h4>Evidence Retrieval</h4>
+                <p>MCP & Google Grounding</p>
+                <div class="step-output" id="out-step-2"></div>
+              </div>
+            </div>
+            <div class="step" id="step-3">
+              <div class="step-icon"><i class="fa-solid fa-balance-scale"></i></div>
+              <div class="step-info">
+                <h4>Fact Checker</h4>
+                <p>Evaluating multi-source consensus</p>
+                <div class="step-output" id="out-step-3"></div>
+              </div>
+            </div>
+            <div class="step" id="step-4">
+              <div class="step-icon"><i class="fa-solid fa-feather-pointed"></i></div>
+              <div class="step-info">
+                <h4>Verdict Synthesis</h4>
+                <p>Writing human summary</p>
+                <div class="step-output" id="out-step-4"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verdict Card -->
+        <div id="verdict-container" class="hidden">
+          <!-- Canvas share container captures this -->
+          <div id="verdict-card" class="verdict-card card">
+            <div class="verdict-header x-flex">
+              <div class="verdict-badge" id="verdict-badge">VERDICT</div>
+              <div class="confidence-meter">
+                <span id="conf-val">0%</span> Confidence
+                <div class="meter-bar"><div class="meter-fill" id="conf-fill"></div></div>
+              </div>
+            </div>
+            <h2 id="verdict-headline" class="mt-4 mb-2"></h2>
+            <p id="verdict-explanation" class="text-lg"></p>
+            
+            <div class="subclaims-grid mt-4" id="subclaims-grid">
+              <!-- Subclaims here -->
+            </div>
+          </div>
+          <div class="x-flex mt-2 justify-end">
+            <button id="btn-share" class="btn-outline"><i class="fa-solid fa-share-nodes"></i> Share / Save Image</button>
+          </div>
+        </div>
+
+        <!-- Evidence Panels -->
+        <div id="evidence-container" class="evidence-container hidden mt-6">
+          <h3><i class="fa-solid fa-book-open-reader"></i> Grounding Evidence</h3>
+          <div class="evidence-grid">
+            <div class="evidence-col col-supports">
+              <h4 class="text-emerald"><i class="fa-solid fa-check-circle"></i> Supports</h4>
+              <div id="ev-supports" class="ev-list"></div>
+            </div>
+            <div class="evidence-col col-contradicts">
+              <h4 class="text-rose"><i class="fa-solid fa-times-circle"></i> Contradicts</h4>
+              <div id="ev-contradicts" class="ev-list"></div>
+            </div>
+            <div class="evidence-col col-neutral">
+              <h4 class="text-slate"><i class="fa-solid fa-minus-circle"></i> Neutral / Context</h4>
+              <div id="ev-neutral" class="ev-list"></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- Settings Modal (Hidden) -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header x-flex">
+        <h2><i class="fa-solid fa-key"></i> System Configuration</h2>
+        <button id="btn-close-settings" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="form-group alert alert-info">
+          <i class="fa-solid fa-info-circle"></i> Local MCP server handles NewsAPI and GNews. You only need Gemini API keys for AI reasoning. Add multiple keys for auto-rotation on limits.
+        </div>
+
+        <div class="form-group" id="keys-list">
+          <!-- Keys injected here -->
+        </div>
+        <button id="btn-add-key" class="btn-outline text-sm mb-4"><i class="fa-solid fa-plus"></i> Add Gemini Key</button>
+
+        <div class="divider"></div>
+
+        <div class="form-group mt-4">
+          <label>Clear Local History</label>
+          <button id="btn-clear-history" class="btn-outline text-rose w-full mt-2"><i class="fa-solid fa-trash"></i> Delete All History</button>
+        </div>
+
+      </div>
+      <div class="modal-footer x-flex justify-end">
+        <button id="btn-save-settings" class="btn-primary">Save & Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container for alerts -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Html2Canvas for sharing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- App Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

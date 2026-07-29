@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NewsMate — AI Fake News Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900&family=JetBrains+Mono:wght@400;500;700&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f2ec;--bg2:#ece8e0;--card:#fff;--card2:#faf8f3;
+  --br:#ddd8ce;--br2:#c8c3b8;
+  --ink:#1e1b18;--ink2:#3a3630;--muted:#888278;
+  --gold:#b87a1c;--gold-lt:#fef3e0;--gold-bd:#f0cc80;
+  --green:#267a42;--green-lt:#e4f3ea;--green-bd:#9dd4b5;
+  --red:#aa2e2e;--red-lt:#fce8e8;--red-bd:#eeaaaa;
+  --amber:#a85a14;--amber-lt:#feeee0;--amber-bd:#f4c095;
+  --blue:#185898;
+  --sh-s:0 1px 4px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+  --sh-m:0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.05);
+  --sh-l:0 12px 40px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.06);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink2);font-family:'Nunito',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:radial-gradient(circle,rgba(150,135,100,.15) 1px,transparent 1px);background-size:22px 22px;pointer-events:none}
+.topbar{position:sticky;top:0;z-index:200;height:4px;background:linear-gradient(90deg,var(--gold),#e0a030,var(--green),#50c080,var(--blue));background-size:200% 100%;animation:shimmer 5s linear infinite}
+@keyframes shimmer{0%{background-position:0 0}100%{background-position:200% 0}}
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:0 24px 100px}
+
+/* HEADER */
+.hdr{text-align:center;padding:40px 0 28px;animation:popUp .6s cubic-bezier(.2,.8,.3,1) both}
+.hdr-badge{display:inline-flex;align-items:center;gap:8px;background:var(--gold-lt);border:1px solid var(--gold-bd);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;color:var(--gold);margin-bottom:16px}
+.hdr h1{font-family:'Lora',serif;font-size:clamp(40px,7vw,72px);font-weight:600;color:var(--ink);letter-spacing:-1.5px;line-height:1;margin-bottom:4px}
+.hdr h1 .ac{color:var(--gold);font-style:italic}
+.hdr-hr{display:flex;align-items:center;gap:12px;margin:14px auto 12px;max-width:360px}
+.hdr-hr span{flex:1;height:1px;background:var(--br2)}
+.hdr-hr .orb{width:8px;height:8px;border-radius:50%;background:var(--gold);opacity:.5}
+.hdr-sub{font-size:14px;color:var(--muted);max-width:520px;margin:0 auto;line-height:1.65}
+
+.mode-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.mode-pill{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--br);border-radius:20px;padding:5px 13px;font-size:11.5px;font-weight:700;color:var(--ink2);box-shadow:var(--sh-s)}
+.dot-g{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
+.dot-a{width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block}
+
+.agent-row{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;margin-top:10px}
+.a-chip{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--br);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:var(--ink2);box-shadow:var(--sh-s)}
+
+/* QUOTA */
+.quota-bar{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.q-pill{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--br);border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;color:var(--ink2);box-shadow:var(--sh-s)}
+.q-dot{width:8px;height:8px;border-radius:50%;background:var(--green);transition:background .3s}
+.q-dot.warn{background:var(--amber)}
+.q-dot.over{background:var(--red)}
+
+/* GEAR + MODAL */
+.gear{position:fixed;bottom:24px;right:24px;z-index:500;width:50px;height:50px;border-radius:50%;background:var(--card);border:1.5px solid var(--br2);box-shadow:var(--sh-m);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .25s}
+.gear:hover{border-color:var(--gold);color:var(--gold);transform:rotate(60deg) scale(1.08);box-shadow:var(--sh-l)}
+.mbg{position:fixed;inset:0;z-index:600;background:rgba(30,27,24,.45);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
+.mbg.open{display:flex;animation:fadeIn .2s ease both}
+.mdl{background:var(--card);border:1px solid var(--br);border-radius:16px;padding:36px;width:100%;max-width:580px;position:relative;box-shadow:var(--sh-l);animation:slideUp .3s cubic-bezier(.2,.8,.3,1) both}
+.mdl-x{position:absolute;top:14px;right:14px;background:var(--bg2);border:none;border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .2s}
+.mdl-x:hover{background:var(--red-lt);color:var(--red)}
+.mdl-h{font-size:18px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.mdl-s{font-size:13px;color:var(--muted);margin-bottom:16px}
+
+/* CORS warning box */
+.cors-box{background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:10px;padding:14px 16px;font-size:12.5px;font-weight:600;color:var(--amber);line-height:1.7;margin-bottom:16px}
+.cors-box strong{font-weight:800}
+.cors-box code{font-family:'JetBrains Mono',monospace;background:rgba(0,0,0,.08);padding:1px 5px;border-radius:3px;font-size:11px}
+
+.green-box{background:var(--green-lt);border:1px solid var(--green-bd);border-radius:10px;padding:12px 16px;font-size:12.5px;font-weight:600;color:var(--green);line-height:1.6;margin-bottom:16px}
+.green-box strong{font-weight:800}
+
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:500px){.fg{grid-template-columns:1fr}}
+.field label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+.req{color:var(--red)}
+.field input{width:100%;background:var(--bg);border:1.5px solid var(--br);border-radius:8px;padding:9px 13px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink);outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,122,28,.1)}
+.field input::placeholder{color:var(--muted);opacity:.5}
+.field .hint{margin-top:5px;font-size:11px;color:var(--muted)}
+.field .hint a{color:var(--gold);text-decoration:none;font-weight:700}
+.mdl-save{width:100%;margin-top:18px;padding:13px;background:linear-gradient(135deg,var(--gold),#d99a28);border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(184,122,28,.3);transition:all .2s}
+.mdl-save:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(184,122,28,.4)}
+.mdl-ok{text-align:center;font-size:13px;color:var(--green);font-weight:700;min-height:18px;margin-top:10px}
+
+/* MCP STATUS BANNER */
+.mcp-status{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;margin-bottom:16px;font-size:12.5px;font-weight:700;border:1px solid var(--br);background:var(--card2);box-shadow:var(--sh-s)}
+.mcp-status.connected{background:var(--green-lt);border-color:var(--green-bd);color:var(--green)}
+.mcp-status.disconnected{background:var(--amber-lt);border-color:var(--amber-bd);color:var(--amber)}
+.mcp-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.mcp-status.connected .mcp-dot{background:var(--green);animation:pulse 2s infinite}
+.mcp-status.disconnected .mcp-dot{background:var(--amber)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ALERT */
+.alert{display:none;padding:14px 18px;border-radius:10px;margin-bottom:20px;font-size:13.5px;font-weight:600;line-height:1.6}
+.alert.show{display:flex;align-items:flex-start;gap:10px;animation:popUp .3s ease both}
+.alert.error{background:var(--red-lt);border:1px solid var(--red-bd);color:var(--red)}
+.alert.warn{background:var(--amber-lt);border:1px solid var(--amber-bd);color:var(--amber)}
+.alert .ai{font-size:18px;flex-shrink:0;margin-top:1px}
+.alert a{color:inherit;font-weight:800}
+
+/* SEARCH CARD */
+.scard{background:var(--card);border:1px solid var(--br);border-radius:16px;padding:28px;margin-bottom:20px;box-shadow:var(--sh-s);animation:popUp .5s .1s cubic-bezier(.2,.8,.3,1) both}
+.slbl{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.srow{display:flex;gap:10px;align-items:flex-start}
+textarea#claim{flex:1;background:var(--bg);border:1.5px solid var(--br);border-radius:10px;padding:14px 16px;font-family:'Nunito',sans-serif;font-size:14.5px;font-weight:600;color:var(--ink);line-height:1.6;resize:none;height:88px;outline:none;transition:border-color .2s,box-shadow .2s}
+textarea#claim:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,122,28,.1)}
+textarea#claim::placeholder{color:var(--muted);font-weight:400;font-style:italic;font-size:13px}
+#vBtn{background:linear-gradient(135deg,var(--gold),#d99a28);color:#fff;border:none;border-radius:10px;padding:0 26px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;align-self:stretch;min-width:120px;white-space:nowrap;box-shadow:0 4px 14px rgba(184,122,28,.3);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+#vBtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 22px rgba(184,122,28,.4)}
+#vBtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.bspin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite;display:none;flex-shrink:0}
+.loading .bspin{display:block}
+.loading .blbl{display:none}
+.eg-wrap{margin-top:14px}
+.eg-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.eg-row{display:flex;flex-wrap:wrap;gap:8px}
+.eg{background:var(--bg2);border:1px solid var(--br);border-radius:20px;padding:5px 13px;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer;transition:all .18s}
+.eg:hover{background:var(--gold-lt);border-color:var(--gold-bd);color:var(--gold);transform:translateY(-1px)}
+
+/* PIPELINE */
+.pipe{display:none;margin-bottom:20px;animation:popUp .4s ease both}
+.pipe.show{display:block}
+.pcard{background:var(--card);border:1px solid var(--br);border-radius:16px;padding:24px;box-shadow:var(--sh-s)}
+.ptitle{font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:14px;display:flex;align-items:center;gap:7px}
+
+/* search mode indicator */
+.search-mode{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;margin-bottom:12px;font-size:12px;font-weight:700;border:1px solid var(--br)}
+.search-mode.mcp{background:var(--green-lt);border-color:var(--green-bd);color:var(--green)}
+.search-mode.gemini{background:var(--gold-lt);border-color:var(--gold-bd);color:var(--gold)}
+.search-mode.none{background:var(--bg2);border-color:var(--br2);color:var(--muted)}
+
+.call-counter{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--gold-lt);border:1px solid var(--gold-bd);border-radius:10px;font-size:12px;font-weight:700;color:var(--gold);margin-bottom:12px}
+.cc-dots{display:flex;gap:5px}
+.cc-dot{width:12px;height:12px;border-radius:50%;background:var(--br2);transition:background .3s,transform .3s}
+.cc-dot.active{background:var(--gold);transform:scale(1.2)}
+.cc-dot.done{background:var(--green)}
+
+.agents{display:flex;background:var(--bg);border:1px solid var(--br);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.ag{flex:1;padding:14px 6px 12px;text-align:center;border-right:1px solid var(--br);transition:background .3s}
+.ag:last-child{border-right:none}
+.ag.run{background:var(--gold-lt)}
+.ag.done{background:var(--green-lt)}
+.ag.err{background:var(--red-lt)}
+.ag-ic{font-size:22px;display:block;margin-bottom:5px;filter:grayscale(1) opacity(.3);transition:filter .3s}
+.ag.run .ag-ic{filter:none;animation:bounce 1s infinite}
+.ag.done .ag-ic,.ag.err .ag-ic{filter:none}
+.ag-nm{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:3px;color:var(--muted)}
+.ag.run .ag-nm{color:var(--gold)}
+.ag.done .ag-nm{color:var(--green)}
+.ag.err .ag-nm{color:var(--red)}
+.ag-st{font-size:10px;color:var(--br2);font-weight:600}
+.ag.run .ag-st{color:var(--gold)}
+.ag.done .ag-st{color:var(--green)}
+
+.rbar{display:none;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:6px}
+.rbar.show{display:block}
+.rfill{height:100%;background:linear-gradient(90deg,var(--gold),var(--amber));width:0;transition:width .3s linear}
+.rwait{text-align:center;font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px;display:none}
+.rwait.show{display:block}
+
+.term{background:var(--ink);border-radius:10px;padding:14px 16px;max-height:140px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:2}
+.lg{display:flex;gap:12px}
+.lg .ts{color:#484540;flex-shrink:0}
+.lg .ms{color:#7a756e}
+.lg.ok .ms{color:#5dba7e}
+.lg.warn .ms{color:#c9a84c}
+.lg.err .ms{color:#e07070}
+.lg.info .ms{color:#7aabdb}
+
+/* RESULTS */
+#res{display:none}
+#res.show{display:block;animation:popUp .5s ease both}
+.vc{background:var(--card);border-radius:16px;padding:32px 36px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:var(--sh-m)}
+.vc::after{content:attr(data-em);position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:90px;opacity:.07;pointer-events:none;line-height:1}
+.vc.vt{border:2px solid var(--green-bd);background:linear-gradient(135deg,var(--card) 55%,var(--green-lt))}
+.vc.vf{border:2px solid var(--red-bd);background:linear-gradient(135deg,var(--card) 55%,var(--red-lt))}
+.vc.vm{border:2px solid var(--amber-bd);background:linear-gradient(135deg,var(--card) 55%,var(--amber-lt))}
+.vc.vu{border:2px solid var(--gold-bd);background:linear-gradient(135deg,var(--card) 55%,var(--gold-lt))}
+.vstamp{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:.5px;padding:6px 14px;border-radius:20px;margin-bottom:16px}
+.vt .vstamp{background:var(--green-lt);color:var(--green);border:1.5px solid var(--green-bd)}
+.vf .vstamp{background:var(--red-lt);color:var(--red);border:1.5px solid var(--red-bd)}
+.vm .vstamp{background:var(--amber-lt);color:var(--amber);border:1.5px solid var(--amber-bd)}
+.vu .vstamp{background:var(--gold-lt);color:var(--gold);border:1.5px solid var(--gold-bd)}
+.vhead{font-family:'Lora',serif;font-size:clamp(19px,2.8vw,26px);font-weight:600;color:var(--ink);line-height:1.3;margin-bottom:14px;max-width:680px}
+.vbody{font-size:14.5px;color:var(--ink2);line-height:1.8;max-width:650px;margin-bottom:22px}
+.crow{display:flex;align-items:center;gap:12px;max-width:400px}
+.clbl{font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap;letter-spacing:.5px}
+.cbar{flex:1;height:8px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.cfill{height:100%;border-radius:4px;width:0;transition:width 1.2s cubic-bezier(.2,.8,.3,1)}
+.vt .cfill{background:linear-gradient(90deg,#267a42,#50c080)}
+.vf .cfill{background:linear-gradient(90deg,#aa2e2e,#e05858)}
+.vm .cfill{background:linear-gradient(90deg,#a85a14,#e08040)}
+.vu .cfill{background:linear-gradient(90deg,var(--gold),#d99a28)}
+.cpct{font-size:15px;font-weight:800;color:var(--ink);min-width:42px}
+
+/* source mode badge on result */
+.src-mode-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;margin-top:14px}
+.src-mode-badge.mcp{background:var(--green-lt);color:var(--green);border:1px solid var(--green-bd)}
+.src-mode-badge.gsearch{background:var(--gold-lt);color:var(--gold);border:1px solid var(--gold-bd)}
+.src-mode-badge.training{background:var(--bg2);color:var(--muted);border:1px solid var(--br)}
+
+.sh{display:flex;align-items:center;gap:10px;margin:28px 0 14px;font-size:12.5px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px}
+.sh::after{content:'';flex:1;height:1px;background:var(--br)}
+
+.exbox{background:var(--card);border:1.5px solid var(--br);border-left:4px solid var(--gold);border-radius:0 12px 12px 0;padding:18px 22px;margin-bottom:20px;box-shadow:var(--sh-s)}
+.exlbl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.exbox p{font-size:14px;color:var(--ink2);line-height:1.8;font-family:'Lora',serif;font-style:italic}
+
+.egrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px;margin-bottom:8px}
+.ecard{background:var(--card);border:1.5px solid var(--br);border-radius:12px;padding:18px;box-shadow:var(--sh-s);transition:all .2s}
+.ecard:hover{border-color:var(--gold-bd);transform:translateY(-2px);box-shadow:var(--sh-m)}
+.esrc{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+.etitle{font-size:13px;font-weight:700;color:var(--ink);line-height:1.4;margin-bottom:8px;font-family:'Lora',serif}
+.enote{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+.efoot{display:flex;align-items:center;justify-content:space-between}
+.ebadge{font-size:10px;font-weight:800;letter-spacing:.5px;padding:3px 10px;border-radius:20px}
+.ebadge.s{background:var(--green-lt);color:var(--green)}
+.ebadge.c{background:var(--red-lt);color:var(--red)}
+.ebadge.n{background:var(--gold-lt);color:var(--gold)}
+.elink{font-size:11px;font-weight:700;color:var(--blue);text-decoration:none}
+.elink:hover{text-decoration:underline}
+
+.bk{background:var(--card);border:1.5px solid var(--br);border-radius:12px;overflow:hidden;margin-bottom:8px;box-shadow:var(--sh-s)}
+.brow{display:grid;grid-template-columns:148px 1fr;border-bottom:1px solid var(--br)}
+.brow:last-child{border-bottom:none}
+.bag{padding:14px 16px;font-size:11.5px;font-weight:800;color:var(--gold);border-right:1px solid var(--br);display:flex;align-items:center;gap:5px;background:var(--card2)}
+.btx{padding:14px 18px;font-size:13px;color:var(--ink2);line-height:1.7}
+@media(max-width:500px){.brow{grid-template-columns:1fr}.bag{border-right:none;border-bottom:1px solid var(--br)}}
+
+.rbtn{display:inline-flex;align-items:center;gap:8px;background:var(--bg2);border:1.5px solid var(--br2);border-radius:8px;padding:10px 20px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;margin-top:8px;transition:all .2s}
+.rbtn:hover{background:var(--gold-lt);border-color:var(--gold-bd);color:var(--gold)}
+
+.sf{border-top:1px solid var(--br);padding-top:22px;margin-top:40px}
+.sfl{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px}
+.sfc{display:flex;flex-wrap:wrap;gap:7px}
+.sfch{background:var(--card);border:1px solid var(--br);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:var(--ink2);box-shadow:var(--sh-s)}
+
+@keyframes popUp{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px}
+@media(max-width:600px){.srow{flex-direction:column}#vBtn{width:100%;padding:14px}.agents{display:grid;grid-template-columns:1fr 1fr 1fr}.ag{border-bottom:1px solid var(--br)}}
+
+/* ════════════════════════════════════════════
+   RESEARCH MODE — v7 additions
+════════════════════════════════════════════ */
+.res-btn{position:fixed;bottom:24px;right:84px;z-index:500;width:50px;height:50px;border-radius:50%;background:var(--card);border:1.5px solid var(--br2);box-shadow:var(--sh-m);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .25s}
+.res-btn:hover{border-color:var(--blue);color:var(--blue);box-shadow:var(--sh-l)}
+.res-btn.has-data{border-color:var(--green-bd);color:var(--green);background:var(--green-lt)}
+
+/* Research panel */
+.rpanel-bg{position:fixed;inset:0;z-index:700;background:rgba(30,27,24,.5);backdrop-filter:blur(10px);display:none;align-items:flex-start;justify-content:flex-end}
+.rpanel-bg.open{display:flex;animation:fadeIn .2s ease both}
+.rpanel{background:var(--card);width:min(820px,95vw);height:100vh;overflow-y:auto;padding:28px 30px;box-shadow:-4px 0 40px rgba(0,0,0,.15);animation:slideLeft .3s cubic-bezier(.2,.8,.3,1) both;display:flex;flex-direction:column;gap:20px}
+@keyframes slideLeft{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+.rpanel-hdr{display:flex;align-items:center;justify-content:space-between}
+.rpanel-title{font-size:18px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px}
+.rpanel-x{background:var(--bg2);border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .2s}
+.rpanel-x:hover{background:var(--red-lt);color:var(--red)}
+
+/* stat cards */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:600px){.stat-row{grid-template-columns:1fr 1fr}}
+.stat-card{background:var(--bg);border:1.5px solid var(--br);border-radius:12px;padding:14px 16px;text-align:center}
+.stat-val{font-size:26px;font-weight:900;color:var(--ink);font-family:'JetBrains Mono',monospace;line-height:1}
+.stat-lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:5px}
+.stat-card.green{border-color:var(--green-bd);background:var(--green-lt)}
+.stat-card.green .stat-val{color:var(--green)}
+.stat-card.amber{border-color:var(--amber-bd);background:var(--amber-lt)}
+.stat-card.amber .stat-val{color:var(--amber)}
+.stat-card.blue{border-color:#b8d4f0;background:#e8f2fc}
+.stat-card.blue .stat-val{color:var(--blue)}
+
+/* section headers */
+.rs-hdr{font-size:12px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px;padding-bottom:6px;border-bottom:2px solid var(--br);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+
+/* metrics table */
+.mtbl{width:100%;border-collapse:collapse;font-size:12px}
+.mtbl th{text-align:left;padding:7px 10px;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--br);background:var(--bg2)}
+.mtbl td{padding:8px 10px;border-bottom:1px solid var(--bg2);font-weight:600;color:var(--ink2);vertical-align:middle}
+.mtbl tr:last-child td{border-bottom:none}
+.mtbl tr:hover td{background:var(--bg2)}
+.badge-cat{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:800;background:var(--gold-lt);color:var(--gold);border:1px solid var(--gold-bd)}
+
+/* calibration */
+.cal-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px}
+.cal-range{width:80px;font-weight:700;color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:11px}
+.cal-bar-wrap{flex:1;height:14px;background:var(--bg2);border-radius:7px;overflow:hidden;position:relative}
+.cal-bar{height:100%;border-radius:7px;transition:width .8s cubic-bezier(.2,.8,.3,1)}
+.cal-val{width:50px;text-align:right;font-weight:700;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px}
+.cal-n{font-size:10px;color:var(--muted)}
+
+/* dataset table */
+.dtbl-wrap{overflow-x:auto;border:1px solid var(--br);border-radius:10px}
+.dtbl{width:100%;border-collapse:collapse;font-size:11.5px;min-width:680px}
+.dtbl th{text-align:left;padding:8px 10px;font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--br);background:var(--bg2);white-space:nowrap}
+.dtbl td{padding:7px 10px;border-bottom:1px solid var(--bg2);font-weight:600;color:var(--ink2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dtbl tr:last-child td{border-bottom:none}
+.dtbl tr:hover td{background:var(--bg2)}
+.v-t{color:var(--green);font-weight:800}.v-f{color:var(--red);font-weight:800}.v-m{color:var(--amber);font-weight:800}.v-u{color:var(--gold);font-weight:800}
+.chk-y{color:var(--green);font-size:14px}.chk-n{color:var(--red);font-size:14px}
+
+/* buttons row */
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.rpanel-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-family:'Nunito',sans-serif;font-size:12.5px;font-weight:800;cursor:pointer;border:1.5px solid var(--br);background:var(--bg2);color:var(--ink2);transition:all .2s}
+.rpanel-btn:hover{background:var(--gold-lt);border-color:var(--gold-bd);color:var(--gold)}
+.rpanel-btn.danger:hover{background:var(--red-lt);border-color:var(--red-bd);color:var(--red)}
+.rpanel-btn.primary{background:linear-gradient(135deg,var(--green),#50c080);border-color:transparent;color:#fff}
+.rpanel-btn.primary:hover{opacity:.9;color:#fff}
+.empty-state{text-align:center;padding:30px;color:var(--muted);font-size:13px;font-weight:600}
+
+/* Research logger (after verdict) */
+.rlog-box{background:var(--card);border:2px solid var(--blue);border-radius:14px;padding:22px 24px;margin-top:16px;box-shadow:var(--sh-s)}
+.rlog-title{font-size:13px;font-weight:800;color:var(--blue);margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.rlog-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:550px){.rlog-grid{grid-template-columns:1fr 1fr}}
+.rlog-field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px}
+.rlog-field select,.rlog-field input{width:100%;background:var(--bg);border:1.5px solid var(--br);border-radius:8px;padding:8px 10px;font-family:'Nunito',sans-serif;font-size:12.5px;font-weight:700;color:var(--ink);outline:none;transition:border-color .2s}
+.rlog-field select:focus,.rlog-field input:focus{border-color:var(--blue)}
+.rlog-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rlog-save{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;background:var(--blue);border:none;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:#fff;cursor:pointer;transition:all .2s}
+.rlog-save:hover{opacity:.85;transform:translateY(-1px)}
+.rlog-saved{font-size:12px;font-weight:700;color:var(--green);display:none}
+.rlog-saved.show{display:inline-flex;align-items:center;gap:5px}
+.rlog-auto{font-size:11px;color:var(--muted);font-weight:600;display:flex;gap:14px;flex-wrap:wrap}
+.rlog-auto span{background:var(--bg2);border:1px solid var(--br);border-radius:6px;padding:3px 8px;font-family:'JetBrains Mono',monospace;font-size:10px}
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<button class="res-btn" id="resDashBtn" onclick="openR()" title="Research Dashboard (0 records)">📊</button>
+<button class="gear" onclick="openM()" title="API Settings">⚙️</button>
+
+<!-- MODAL -->
+<div class="mbg" id="mbg" onclick="bgC(event)">
+<div class="mdl">
+  <button class="mdl-x" onclick="closeM()">✕</button>
+  <div class="mdl-h">⚙️ API Configuration</div>
+  <div class="mdl-s">Keys stored only in this browser session — never sent elsewhere.</div>
+
+  <div class="green-box">
+    ✅ <strong>Free models used:</strong> gemini-2.5-flash (500/day) + gemini-2.5-flash-lite (1000/day)<br>
+    ⚡ Only <strong>3 API calls per verification</strong> to conserve quota.
+  </div>
+
+  <div class="cors-box">
+    ✅ <strong>Live Recruiter Demo Mode Active:</strong><br>
+    Your live Railway MCP server (NewsAPI + GNews + DuckDuckGo) and Gemini API key are <strong>pre-configured out-of-the-box</strong>.<br>
+    👉 Recruiters can click any sample claim or type a custom claim and hit <strong>VERIFY</strong> immediately — no setup required!
+  </div>
+
+  <div class="fg">
+    <div class="field">
+      <label>🔑 Gemini API Key <span style="color:var(--green);font-size:10px;">(Pre-configured & Active)</span></label>
+      <input type="password" id="gk" placeholder="AIza... (Pre-configured)" autocomplete="off">
+      <div class="hint">Override if using a custom key from <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></div>
+    </div>
+    <div class="field">
+      <label>🖥️ MCP Server URL <span style="color:var(--green);font-size:10px;">⭐ Live Railway Server</span></label>
+      <input type="text" id="mcp" placeholder="https://newsmate-v6-production-bde0.up.railway.app" autocomplete="off">
+      <div class="hint">Pre-configured Railway MCP server with NewsAPI + GNews + DuckDuckGo</div>
+    </div>
+  </div>
+
+  <button class="mdl-save" onclick="saveS()">💾 Save Custom Configuration</button>
+  <div class="mdl-ok" id="mok"></div>
+</div>
+</div>
+
+
+<!-- RESEARCH PANEL -->
+<div class="rpanel-bg" id="rpanelBg" onclick="if(event.target===this)closeR()">
+<div class="rpanel" id="rpanel">
+  <div class="rpanel-hdr">
+    <div class="rpanel-title">📊 Research Dashboard</div>
+    <button class="rpanel-x" onclick="closeR()">✕</button>
+  </div>
+
+  <div>
+    <div class="rs-hdr">📈 Overall Performance Metrics</div>
+    <div class="stat-row" id="statRow">
+      <div class="stat-card"><div class="stat-val" id="sm-total">0</div><div class="stat-lbl">Total Tests</div></div>
+      <div class="stat-card green"><div class="stat-val" id="sm-acc">—</div><div class="stat-lbl">Accuracy</div></div>
+      <div class="stat-card amber"><div class="stat-val" id="sm-f1">—</div><div class="stat-lbl">F1 Score</div></div>
+      <div class="stat-card blue"><div class="stat-val" id="sm-lat">—</div><div class="stat-lbl">Avg Latency</div></div>
+    </div>
+    <div class="stat-row" style="margin-top:10px">
+      <div class="stat-card"><div class="stat-val" id="sm-prec">—</div><div class="stat-lbl">Precision</div></div>
+      <div class="stat-card"><div class="stat-val" id="sm-rec">—</div><div class="stat-lbl">Recall</div></div>
+      <div class="stat-card"><div class="stat-val" id="sm-mcp-acc">—</div><div class="stat-lbl">MCP Mode Acc.</div></div>
+      <div class="stat-card"><div class="stat-val" id="sm-gem-acc">—</div><div class="stat-lbl">Gemini Mode Acc.</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rs-hdr">📂 Accuracy by Category</div>
+    <div id="catTable"><div class="empty-state">No data yet — run some verifications and log them.</div></div>
+  </div>
+
+  <div>
+    <div class="rs-hdr">📐 Confidence Calibration</div>
+    <p style="font-size:11.5px;color:var(--muted);margin-bottom:10px">When system says X% confident, how often is it actually correct? Ideal: bars should match confidence levels.</p>
+    <div id="calChart"><div class="empty-state">No data yet.</div></div>
+  </div>
+
+  <div>
+    <div class="rs-hdr">🔬 Ablation: MCP vs Gemini Search</div>
+    <div id="ablTable"><div class="empty-state">Need data from both search modes to compare.</div></div>
+  </div>
+
+  <div>
+    <div class="rs-hdr">🗄️ Full Dataset (<span id="dsCount">0</span> records)</div>
+    <div class="btn-row" style="margin-bottom:12px">
+      <button class="rpanel-btn primary" onclick="exportCSV()">⬇️ Export CSV for Paper</button>
+      <button class="rpanel-btn" onclick="exportJSON()">📄 Export JSON</button>
+      <button class="rpanel-btn danger" onclick="clearData()">🗑️ Clear All Data</button>
+    </div>
+    <div class="dtbl-wrap">
+      <table class="dtbl">
+        <thead><tr>
+          <th>#</th><th>Claim</th><th>Category</th>
+          <th>True Label</th><th>System Verdict</th><th>Conf%</th>
+          <th>Correct</th><th>Search Mode</th><th>Latency(s)</th><th>Articles</th>
+        </tr></thead>
+        <tbody id="dsTbody"><tr><td colspan="10" class="empty-state">No records yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- APP -->
+<div class="wrap">
+
+<header class="hdr">
+  <div class="hdr-badge">🤖 Multi-Agent AI · 19 Authorized Sources · 100% Free Gemini Tier</div>
+  <h1>News<span class="ac">Mate</span></h1>
+  <div class="hdr-hr"><span></span><div class="orb"></div><span></span></div>
+  <p class="hdr-sub">🔎 Paste any headline or claim — 5 AI agents fact-check it using live news sources and deliver a verdict.</p>
+  <div class="mode-row">
+    <div class="mode-pill"><span class="dot-g"></span>gemini-2.5-flash · 500/day free</div>
+    <div class="mode-pill"><span class="dot-g"></span>gemini-2.5-flash-lite · 1000/day free</div>
+  </div>
+  <div class="quota-bar" id="quotaBar">
+    <div class="q-pill"><span class="q-dot" id="qDot"></span>Session calls: <span id="qCount" style="font-family:'JetBrains Mono',monospace;font-size:11px">0</span></div>
+    <div class="q-pill">⚡ 3 calls per check</div>
+    <div class="q-pill" id="mcpStatusPill">⚠️ No MCP — using Gemini Search</div>
+  </div>
+  <div class="agent-row">
+    <span class="a-chip">🎯 Orchestrator</span>
+    <span class="a-chip">🔍 Web Search</span>
+    <span class="a-chip">📊 Analyzer</span>
+    <span class="a-chip">⚖️ Fact Check</span>
+    <span class="a-chip">📋 Verdict</span>
+  </div>
+</header>
+
+<div class="alert" id="altBox">
+  <span class="ai" id="altIco">⚠️</span>
+  <span id="altMsg"></span>
+</div>
+
+<div class="scard">
+  <div class="slbl">📝 Enter a news headline, claim, or rumour to verify</div>
+  <div class="srow">
+    <textarea id="claim" placeholder="e.g. 'Iran leader killed in airstrike' — paste any claim, story or headline here…"></textarea>
+    <button id="vBtn" onclick="go()">
+      <div class="bspin"></div>
+      <span class="blbl">🔍 VERIFY</span>
+    </button>
+  </div>
+  <div class="eg-wrap">
+    <div class="eg-lbl">💡 Try an example:</div>
+    <div class="eg-row">
+      <span class="eg" onclick="use(this)">💉 COVID vaccines contain microchips</span>
+      <span class="eg" onclick="use(this)">🌙 Moon landing was faked by NASA</span>
+      <span class="eg" onclick="use(this)">🌡️ Climate change causing extreme weather</span>
+      <span class="eg" onclick="use(this)">🌍 WHO declared global health emergency 2024</span>
+    </div>
+  </div>
+</div>
+
+<div class="pipe" id="pipeEl">
+<div class="pcard">
+  <div class="ptitle">⚡ Live Agent Pipeline Running…</div>
+  <div class="search-mode none" id="searchModeEl">🔄 Determining search method…</div>
+  <div class="call-counter" id="callBox">
+    <span>🔗 API Calls:</span>
+    <div class="cc-dots">
+      <div class="cc-dot" id="cd1"></div>
+      <div class="cc-dot" id="cd2"></div>
+      <div class="cc-dot" id="cd3"></div>
+    </div>
+    <span id="callLbl" style="font-size:11px;margin-left:4px">Preparing…</span>
+  </div>
+  <div class="agents">
+    <div class="ag" id="ag0"><span class="ag-ic">🎯</span><span class="ag-nm">Orchestrator</span><span class="ag-st" id="st0">—</span></div>
+    <div class="ag" id="ag1"><span class="ag-ic">🔍</span><span class="ag-nm">Web Search</span><span class="ag-st" id="st1">—</span></div>
+    <div class="ag" id="ag2"><span class="ag-ic">📊</span><span class="ag-nm">Analyzer</span><span class="ag-st" id="st2">—</span></div>
+    <div class="ag" id="ag3"><span class="ag-ic">⚖️</span><span class="ag-nm">Fact Check</span><span class="ag-st" id="st3">—</span></div>
+    <div class="ag" id="ag4"><span class="ag-ic">📋</span><span class="ag-nm">Verdict</span><span class="ag-st" id="st4">—</span></div>
+  </div>
+  <div class="rwait" id="rwait"></div>
+  <div class="rbar" id="rbar"><div class="rfill" id="rfill"></div></div>
+  <div class="term" id="term"></div>
+</div>
+</div>
+
+<div id="res">
+  <div class="vc" id="vcard">
+    <div class="vstamp" id="vstamp"></div>
+    <div class="vhead" id="vhead"></div>
+    <div class="vbody" id="vbody"></div>
+    <div class="crow"><span class="clbl">CONFIDENCE</span><div class="cbar"><div class="cfill" id="cfill"></div></div><span class="cpct" id="cpct">—</span></div>
+    <div id="srcModeBadge"></div>
+  </div>
+  <div class="exbox"><div class="exlbl">📖 Detailed Explanation</div><p id="exptxt"></p></div>
+  <div class="sh">📰 Evidence From Authorized Sources</div>
+  <div class="egrid" id="egrid"></div>
+  <div class="sh">🤖 Agent-by-Agent Breakdown</div>
+  <div class="bk" id="bktbl"></div>
+
+  <!-- RESEARCH LOGGER — appears after each verdict -->
+  <div class="rlog-box" id="rlogBox" style="display:none">
+    <div class="rlog-title">📊 Research Logger — Log this verification to your dataset</div>
+    <div class="rlog-auto" id="rlogAuto"></div>
+    <br>
+    <div class="rlog-grid">
+      <div class="rlog-field">
+        <label>📂 Category</label>
+        <select id="rlogCat">
+          <option value="">-- Select --</option>
+          <option value="Political">Political</option>
+          <option value="Health/Medical">Health/Medical</option>
+          <option value="Geopolitical/War">Geopolitical/War</option>
+          <option value="Indian News">Indian News</option>
+          <option value="Celebrity">Celebrity</option>
+          <option value="Satire">Satire</option>
+          <option value="Scientific">Scientific</option>
+          <option value="True Claim">True Claim</option>
+          <option value="Ambiguous">Ambiguous</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="rlog-field">
+        <label>✅ True Label (Ground Truth)</label>
+        <select id="rlogTrue">
+          <option value="">-- Select --</option>
+          <option value="TRUE">TRUE</option>
+          <option value="FALSE">FALSE</option>
+          <option value="MISLEADING">MISLEADING</option>
+          <option value="UNVERIFIED">UNVERIFIED</option>
+          <option value="SATIRE">SATIRE</option>
+        </select>
+      </div>
+      <div class="rlog-field">
+        <label>🎯 System Verdict Correct?</label>
+        <select id="rlogCorrect">
+          <option value="">-- Select --</option>
+          <option value="yes">✅ Yes — Correct</option>
+          <option value="no">❌ No — Wrong</option>
+          <option value="partial">⚠️ Partially Correct</option>
+        </select>
+      </div>
+    </div>
+    <div class="rlog-field" style="margin-bottom:12px">
+      <label>📝 Notes (optional)</label>
+      <input type="text" id="rlogNotes" placeholder="e.g. model struggled with satire, no live articles found...">
+    </div>
+    <div class="rlog-row">
+      <button class="rlog-save" onclick="saveRecord()">💾 Save to Dataset</button>
+      <div class="rlog-saved" id="rlogSaved">✅ Saved! Dataset updated.</div>
+    </div>
+  </div>
+
+  <button class="rbtn" onclick="resetAll()">🔄 Verify Another Claim</button>
+</div>
+
+<div class="sf">
+  <div class="sfl">🏛️ Authorized News Sources (19)</div>
+  <div class="sfc" id="sfc"></div>
+</div>
+
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   ✅ CORRECT FREE MODELS (March 2026)
+   gemini-2.5-flash      → 10 RPM · 500 RPD
+   gemini-2.5-flash-lite → 15 RPM · 1000 RPD
+
+   ❌ THESE HAVE ZERO FREE QUOTA — DON'T USE:
+   gemini-2.5-pro, gemini-3.x-anything
+
+   NEWS SEARCH STRATEGY (fixes CORS errors):
+   • NewsAPI & GNews CANNOT be called from browser
+     — they block CORS. Only a server can call them.
+   • If MCP server URL set → route all news through it ✅
+   • If no MCP → use Gemini's built-in google_search tool
+     (no CORS issues, uses Google's index natively) ✅
+   • Never call NewsAPI/GNews directly from browser ❌
+════════════════════════════════════════════ */
+const MAIN = 'gemini-2.5-flash';       // Calls 1 & 2
+const LITE = 'gemini-2.5-flash-lite';  // Call 3 (most quota)
+
+/* sources */
+const SRCS=[
+  {n:'CNN',d:'cnn.com'},{n:'BBC',d:'bbc.com'},{n:'Reuters',d:'reuters.com'},
+  {n:'India Today',d:'indiatoday.in'},{n:'The Guardian',d:'theguardian.com'},
+  {n:'AP News',d:'apnews.com'},{n:'Al Jazeera',d:'aljazeera.com'},
+  {n:'The Hindu',d:'thehindu.com'},{n:'NDTV',d:'ndtv.com'},
+  {n:'Times of India',d:'timesofindia.indiatimes.com'},{n:'NPR',d:'npr.org'},
+  {n:'NY Times',d:'nytimes.com'},{n:'Washington Post',d:'washingtonpost.com'},
+  {n:'Bloomberg',d:'bloomberg.com'},{n:'The Economist',d:'economist.com'},
+  {n:'Forbes',d:'forbes.com'},{n:'Financial Times',d:'ft.com'},
+  {n:'ABC News',d:'abcnews.go.com'},{n:'CBS News',d:'cbsnews.com'}
+];
+const EMS=['📺','📻','📡','📰','🗞️','🌐','🔔','📖','📱','💬','🎙️','✍️','📝','💰','🌍','💼','📊','🗺️','📣'];
+document.getElementById('sfc').innerHTML=SRCS.map((s,i)=>`<span class="sfch">${EMS[i]} ${s.n}</span>`).join('');
+
+/* settings */
+let sessionCalls=0;
+function openM(){
+  const gkEl=document.getElementById('gk');if(gkEl)gkEl.value=sessionStorage.getItem('gk')||localStorage.getItem('gk')||DEFAULT_GK;
+  const mcpEl=document.getElementById('mcp');if(mcpEl)mcpEl.value=sessionStorage.getItem('mcp')||localStorage.getItem('mcp')||DEFAULT_MCP;
+  document.getElementById('mbg').classList.add('open');
+  updateMcpPill();
+}
+function closeM(){document.getElementById('mbg').classList.remove('open');}
+function bgC(e){if(e.target===document.getElementById('mbg'))closeM();}
+function saveS(){
+  ['gk','nk','gnk','mcp'].forEach(k=>{const el=document.getElementById(k);if(el)sessionStorage.setItem(k,el.value.trim());});
+  const ok=document.getElementById('mok');ok.textContent='✅ Saved!';
+  updateMcpPill();
+  setTimeout(()=>{ok.textContent='';closeM();},1100);
+}
+const DEFAULT_GK = '';
+const DEFAULT_MCP = 'https://newsmate-v6-production-bde0.up.railway.app';
+const G=()=>sessionStorage.getItem('gk')||localStorage.getItem('gk')||DEFAULT_GK;
+const MCP=()=>sessionStorage.getItem('mcp')||localStorage.getItem('mcp')||DEFAULT_MCP;
+
+function updateMcpPill(){
+  const pill=document.getElementById('mcpStatusPill');
+  if(MCP()){pill.textContent='✅ MCP Server connected';pill.style.background='var(--green-lt)';pill.style.color='var(--green)';pill.style.borderColor='var(--green-bd)';}
+  else{pill.textContent='⚡ Using Gemini Search (no MCP)';pill.style.background='var(--gold-lt)';pill.style.color='var(--gold)';pill.style.borderColor='var(--gold-bd)';}
+}
+updateMcpPill();
+
+/* alert */
+function showA(msg,t='error'){
+  const b=document.getElementById('altBox');b.className=`alert show ${t}`;
+  document.getElementById('altMsg').innerHTML=msg;
+  document.getElementById('altIco').textContent=t==='error'?'🚫':'⚠️';
+}
+function hideA(){document.getElementById('altBox').className='alert';}
+
+/* pipeline ui */
+let logs=[];
+function setAg(i,s,t){document.getElementById(`ag${i}`).className=`ag ${s||''}`;document.getElementById(`st${i}`).textContent=t||'—';}
+function addLog(type,msg){
+  const ts=new Date().toLocaleTimeString('en',{hour12:false});
+  logs.push({ts,type,msg});
+  const el=document.getElementById('term');
+  el.innerHTML=logs.map(l=>`<div class="lg ${l.type}"><span class="ts">${l.ts}</span><span class="ms">${l.msg}</span></div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function setCallDot(n,s){
+  document.getElementById(`cd${n}`).className='cc-dot '+(s==='active'?'active':s==='done'?'done':'');
+  document.getElementById('callLbl').textContent=s==='active'?`Call ${n}/3 running…`:s==='done'?`Call ${n}/3 done ✅`:'Preparing…';
+}
+function setSearchMode(mode){
+  const el=document.getElementById('searchModeEl');
+  if(mode==='dual'){el.className='search-mode mcp';el.textContent='🌐 Search Mode: MCP Live News (NewsAPI+GNews+DuckDuckGo) + Gemini Google Search Grounding (Fused)';}
+  else if(mode==='mcp'){el.className='search-mode mcp';el.textContent='🌐 Search Mode: MCP Server (live news API)';}
+  else if(mode==='gemini'){el.className='search-mode gemini';el.textContent='🤖 Search Mode: Gemini Google Search tool (built-in)';}
+  else{el.className='search-mode none';el.textContent='🔄 Determining search method…';}
+}
+function bumpQ(){
+  sessionCalls++;
+  document.getElementById('qCount').textContent=sessionCalls;
+  const d=document.getElementById('qDot');
+  d.className='q-dot'+(sessionCalls>=12?' over':sessionCalls>=7?' warn':'');
+}
+function use(el){document.getElementById('claim').value=el.textContent.replace(/^.\s/,'').trim();}
+function resetAll(){
+  document.getElementById('res').classList.remove('show');
+  document.getElementById('pipeEl').classList.remove('show');
+  document.getElementById('claim').value='';
+  const b=document.getElementById('vBtn');b.disabled=false;b.classList.remove('loading');
+  document.getElementById('rbar').classList.remove('show');
+  document.getElementById('rwait').classList.remove('show');
+  logs=[];
+  for(let i=0;i<5;i++)setAg(i,'','—');
+  [1,2,3].forEach(n=>setCallDot(n,''));
+  setSearchMode('none');
+  hideA();
+}
+
+/* retry countdown */
+function showRetry(secs){
+  const w=document.getElementById('rwait'),bar=document.getElementById('rbar'),fill=document.getElementById('rfill');
+  w.classList.add('show');bar.classList.add('show');fill.style.width='0%';
+  const start=Date.now();
+  const iv=setInterval(()=>{
+    const e=Date.now()-start,pct=Math.min(100,(e/(secs*1000))*100),left=Math.max(0,secs-Math.floor(e/1000));
+    fill.style.width=pct+'%';w.textContent=`⏳ Rate limit — retrying in ${left}s…`;
+    if(pct>=100){clearInterval(iv);w.classList.remove('show');bar.classList.remove('show');fill.style.width='0%';}
+  },200);
+}
+
+/* ════════════════════════════════════════════
+   GEMINI API — with retry + model fallback
+   503 on LITE → fall back to MAIN automatically
+════════════════════════════════════════════ */
+async function gemini(model, prompt, maxTok=800, tools=null, tries=3){
+  const userKey=sessionStorage.getItem('gk')||localStorage.getItem('gk')||'';
+  let m=MCP();
+  m = m ? m.trim().replace(/\/+$/, '').replace(/\/mcp\/search$/i, '') : '';
+
+  const useProxy = !userKey && !!m;
+  const url = useProxy
+    ? `${m}/api/gemini`
+    : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userKey || DEFAULT_GK}`;
+
+  const reqHeaders = { 'Content-Type': 'application/json' };
+  if (!useProxy && userKey) reqHeaders['x-gemini-key'] = userKey;
+
+  const body = useProxy
+    ? { model, prompt, maxTok, tools }
+    : { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTok, temperature: 0.2 }, tools: tools || undefined };
+
+  for(let i=0;i<=tries;i++){
+    let r;
+    try{ r=await fetch(url,{method:'POST',headers:reqHeaders,body:JSON.stringify(body)}); }
+    catch(e){ throw new Error(`Network error: ${e.message}. Check your internet connection.`); }
+
+    if(r.ok){ bumpQ(); const d=await r.json(); return d; }
+
+    const e=await r.json().catch(()=>({}));
+    const msg=e?.error?.message||r.statusText;
+
+    if(r.status===429){
+      if(model===MAIN){
+        addLog('warn',`⚡ 429 Rate limit on ${MAIN} — falling back immediately to ${LITE}…`);
+        return await gemini(LITE, prompt, maxTok, tools, tries);
+      }
+      if(i<tries){
+        const m=msg.match(/retry in (\d+(?:\.\d+)?)s/i);
+        const wait=m?Math.ceil(parseFloat(m[1]))+3:15*(i+1);
+        addLog('warn',`⏳ 429 on ${model} — waiting ${wait}s (attempt ${i+1}/${tries})…`);
+        showRetry(wait);
+        await new Promise(res=>setTimeout(res,wait*1000));
+        continue;
+      }
+    }
+
+    if((r.status===503||r.status===502) && model===LITE && i===0){
+      // Fallback: retry with MAIN model instead
+      addLog('warn',`⚠️ ${model} overloaded (${r.status}) — falling back to ${MAIN}…`);
+      return gemini(MAIN, prompt, maxTok, tools, tries);
+    }
+
+    if((r.status===503||r.status===502) && i<tries){
+      const wait=8*(i+1);
+      addLog('warn',`⏳ ${r.status} server overload on ${model} — waiting ${wait}s…`);
+      showRetry(wait);
+      await new Promise(res=>setTimeout(res,wait*1000));
+      continue;
+    }
+
+    throw new Error(`Gemini ${r.status}: ${msg}`);
+  }
+  throw new Error('Too many retries. Wait 1 minute and try again.');
+}
+
+/* extract text + grounding sources from response */
+function extractText(d){
+  return d?.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('')||'';
+}
+function extractGrounding(d){
+  // Gemini google_search tool returns grounding metadata with sources
+  const meta=d?.candidates?.[0]?.groundingMetadata;
+  if(!meta) return [];
+  const chunks=meta.groundingChunks||[];
+  return chunks.map(c=>({
+    title:c.web?.title||'',
+    url:c.web?.uri||'#',
+    source:new URL(c.web?.uri||'https://unknown').hostname.replace('www.','')
+  })).filter(c=>c.url!=='#');
+}
+
+function pJ(raw,fb){
+  try{
+    const firstBrace = raw.indexOf('{');
+    const lastBrace = raw.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return JSON.parse(raw.substring(firstBrace, lastBrace + 1));
+    }
+    const firstBracket = raw.indexOf('[');
+    const lastBracket = raw.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+      return JSON.parse(raw.substring(firstBracket, lastBracket + 1));
+    }
+    return JSON.parse(raw);
+  }catch(e){return fb;}
+}
+
+/* ════════════════════════════════════════════
+   NEWS SEARCH
+   • If MCP URL set → use MCP (server-side, no CORS)
+   • Otherwise → skip (Gemini will search natively
+     using google_search tool in Call 2)
+════════════════════════════════════════════ */
+async function fetchViaMCP(queries){
+  let m=MCP();
+  if(!m) return null; // signal: use Gemini search instead
+  m = m.trim().replace(/\/+$/, '').replace(/\/mcp\/search$/i, '');
+  try{
+    addLog('info',`🌐 MCP server: fetching live articles…`);
+    const r=await fetch(`${m}/mcp/search`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({queries,maxResults:8})
+    });
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    if(d.results?.length){
+      addLog('ok',`✅ MCP: ${d.results.length} live articles retrieved`);
+      return d.results;
+    }
+    addLog('warn','⚠️ MCP returned empty results — falling back to Gemini Search');
+    return null;
+  }catch(e){
+    addLog('warn',`⚠️ MCP error (${e.message}) — falling back to Gemini Search`);
+    return null;
+  }
+}
+
+/* ════════════════════════════════════════════
+   MAIN PIPELINE
+   Call 1 → Orchestrator (MAIN, no tools)
+   Call 2 → Analyze+FactCheck (MAIN, with google_search if no MCP)
+   Call 3 → Verdict (LITE with fallback to MAIN)
+════════════════════════════════════════════ */
+async function go(){
+  const _startTime = Date.now();
+  const claim=document.getElementById('claim').value.trim();
+  if(!claim){showA('📝 Please enter a news claim to verify.','warn');return;}
+  if(!G()){showA('🔑 <b>Gemini API key required.</b> Click <b>⚙️</b> (bottom-right) to add your free key from <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>');return;}
+
+  hideA();
+  const btn=document.getElementById('vBtn');btn.disabled=true;btn.classList.add('loading');
+  document.getElementById('pipeEl').classList.add('show');
+  document.getElementById('res').classList.remove('show');
+  logs=[];
+  for(let i=0;i<5;i++)setAg(i,'','waiting');
+  [1,2,3].forEach(n=>setCallDot(n,''));
+  setSearchMode('none');
+
+  let orch=null, mcpArts=null, combined=null, verd=null;
+  let searchMode='training'; // 'mcp' | 'gemini' | 'training'
+
+  try{
+    /* ═══════════════════════════════
+       CALL 1 — Orchestrator
+       Model: gemini-2.5-flash
+    ═══════════════════════════════ */
+    setCallDot(1,'active');
+    setAg(0,'run','🤔 thinking…');
+    addLog('info','🎯 Call 1/3 → Orchestrator (gemini-2.5-flash)…');
+
+    const r1=await gemini(MAIN,
+      `You are the Orchestrator AI for NewsMate, a news fact-checker.
+Analyse the claim and output ONLY valid JSON (no markdown, no extra text):
+{"queries":["query1","query2","query3"],"claimType":"factual|scientific|political|historical|health","riskLevel":"low|medium|high","notes":"brief note"}
+Claim: "${claim}"`, 400);
+
+    orch=pJ(extractText(r1),{queries:[claim,`fact check ${claim}`,`${claim} latest`],claimType:'factual',riskLevel:'medium',notes:''});
+    setAg(0,'done','✅ done');
+    setCallDot(1,'done');
+    addLog('ok',`🎯 Orchestrator: type=${orch.claimType}, risk=${orch.riskLevel}`);
+
+    /* ═══════════════════════════════
+       WEB SEARCH — Dual Multi-Source Engine (MCP + Gemini Google Search)
+       Executes BOTH MCP Server (NewsAPI + GNews + DuckDuckGo) AND
+       Gemini Google Search Grounding simultaneously on every verification
+    ═══════════════════════════════ */
+    setAg(1,'run','🌐 MCP + Google Searching…');
+    setSearchMode('dual');
+
+    mcpArts = await fetchViaMCP(orch.queries) || [];
+    searchMode = 'dual';
+
+    setAg(1,'done', `✅ ${mcpArts.length} MCP articles + Live Google Search`);
+    addLog('ok', `🌐 Dual Search Engine: ${mcpArts.length} articles from MCP Server (NewsAPI + GNews + DuckDuckGo) + Gemini Google Search Grounding enabled`);
+
+    await new Promise(r=>setTimeout(r,1500));
+
+    /* ═══════════════════════════════
+       CALL 2 — Analyze + Fact-check (Dual Multi-Source Fusion)
+       Model: gemini-2.5-flash
+       • Fuses MCP live articles + Gemini Google Search Grounding together
+    ═══════════════════════════════ */
+    setCallDot(2,'active');
+    setAg(2,'run','📖 analyzing…');
+    setAg(3,'run','⚖️ checking…');
+    addLog('info',`📊⚖️ Call 2/3 → Analyzing fused evidence from MCP Server + Gemini Google Search Grounding…`);
+
+    // Enable Google Search grounding tool for real-time live web cross-referencing
+    const call2Tools = [{ google_search: {} }];
+
+    let articlesContext = '';
+    if(mcpArts?.length > 0){
+      articlesContext = '\n\n=== RETRIEVED NEWS ARTICLES (MCP STREAM) ===\n' +
+        mcpArts.slice(0,6).map((a,i)=>`[Source ${i+1}] ${a.source} ("${a.title}"): ${(a.description||'').substring(0,140)} (URL: ${a.url})`).join('\n');
+    }
+
+    const prompt2 = `You are two AI agents combined for NewsMate news fact-checker:
+1) Content Analyzer: assess news articles and live web search evidence
+2) Fact Checker: cross-reference claim against all retrieved multi-source evidence
+
+Instructions:
+- Use the google_search tool to find additional recent live web evidence if needed.
+- Cross-reference the claim against both the retrieved MCP articles and live web search results.
+- Carefully determine if evidence supports, contradicts, or leaves the claim unverified.
+
+Output ONLY valid JSON (no markdown, no extra text):
+{
+  "analyzedSources":[{"index":1,"sourceName":"...","title":"...","url":"...","alignment":"supports|contradicts|neutral","credibilityNotes":"one sentence"}],
+  "overallContext":"2 sentences summarising what all sources show",
+  "verdict":"TRUE|FALSE|MISLEADING|UNVERIFIED",
+  "confidence":0-100,
+  "supportingPoints":["point1","point2"],
+  "contradictingPoints":["point1"],
+  "missingContext":"one sentence",
+  "reasoning":"3 clear sentences explaining verdict"
+}
+Claim: "${claim}"
+Type: ${orch.claimType} | Risk: ${orch.riskLevel}${articlesContext}`;
+
+    const r2 = await gemini(MAIN, prompt2, 1100, call2Tools);
+    combined = pJ(extractText(r2), { analyzedSources: [], overallContext: '', verdict: 'UNVERIFIED', confidence: 50, supportingPoints: [], contradictingPoints: [], missingContext: '', reasoning: '' });
+
+    // FUSE GROUNDING SOURCES WITH MCP SOURCES
+    const groundingSrcs = extractGrounding(r2);
+    if(groundingSrcs.length > 0 && combined.analyzedSources?.length === 0){
+      combined.analyzedSources = groundingSrcs.slice(0,5).map((s,i)=>({
+        index: i+1,
+        sourceName: s.source,
+        title: s.title,
+        url: s.url,
+        alignment: 'neutral',
+        credibilityNotes: 'Retrieved via Gemini Google Search Grounding'
+      }));
+    }
+
+    setAg(2,'done',`✅ ${combined.analyzedSources?.length||0} sources`);
+    setAg(3,'done',`✅ ${combined.verdict}`);
+    setCallDot(2,'done');
+    const lvl=combined.verdict==='TRUE'?'ok':combined.verdict==='FALSE'?'err':'warn';
+    addLog(lvl,`⚖️ Verdict: ${combined.verdict} — ${combined.confidence}% confidence`);
+
+    await new Promise(r=>setTimeout(r,3000));
+
+    /* ═══════════════════════════════
+       CALL 3 — Verdict
+       Model: gemini-2.5-flash-lite
+       (auto-fallback to MAIN on 503)
+    ═══════════════════════════════ */
+    setCallDot(3,'active');
+    setAg(4,'run','✍️ writing…');
+    addLog('info','📋 Call 3/3 → Verdict (gemini-2.5-flash-lite, fallback to flash)…');
+
+    const r3=await gemini(LITE,
+      `You are the Verdict Writer for NewsMate, a student news fact-checker.
+Write a clear, friendly, student-appropriate report.
+Output ONLY valid JSON (no markdown, no extra text):
+{
+  "headline":"10-15 word verdict headline",
+  "summary":"2 plain clear sentences a student can understand",
+  "explanation":"3 detailed sentences with reasoning and evidence context",
+  "recommendation":"1-2 sentences telling student what to do",
+  "agentNotes":{"orchestrator":"1 sentence","search":"1 sentence","analyzer":"1 sentence","factcheck":"1 sentence"}
+}
+Claim: "${claim}"
+Verdict: ${combined.verdict} (${combined.confidence}% confidence)
+Reasoning: ${combined.reasoning}
+Context: ${combined.overallContext}`, 800);
+
+    verd=pJ(extractText(r3),{
+      headline:combined.verdict==='TRUE'?'This claim appears to be accurate':'This claim appears to be false or misleading',
+      summary:combined.reasoning||'',explanation:combined.overallContext||'',
+      recommendation:'Always verify news from multiple trusted sources before sharing.',
+      agentNotes:{orchestrator:'',search:'',analyzer:'',factcheck:''}
+    });
+    setAg(4,'done','✅ done');
+    setCallDot(3,'done');
+    addLog('ok','🎉 All 3 API calls done! Rendering your report…');
+
+    const _latency = Date.now() - _startTime;
+    render(claim,orch,mcpArts||[],combined,verd,searchMode,_latency);
+
+  }catch(err){
+    addLog('err',`💥 ${err.message}`);
+    showA(`<b>⚠️ Error:</b> ${err.message}`);
+    btn.disabled=false;btn.classList.remove('loading');
+    for(let i=0;i<5;i++){if(document.getElementById(`ag${i}`).classList.contains('run'))setAg(i,'err','❌');}
+  }
+}
+
+/* RENDER */
+function render(claim,orch,arts,fc,verd,searchMode,latencyMs=0){
+  const v=fc.verdict;
+  const vc={TRUE:'vt',FALSE:'vf',MISLEADING:'vm',UNVERIFIED:'vu'}[v]||'vu';
+  const vs={TRUE:'✅ VERIFIED TRUE',FALSE:'❌ VERIFIED FALSE',MISLEADING:'⚠️ MISLEADING',UNVERIFIED:'🔍 UNVERIFIED'}[v]||'🔍';
+  const ve={TRUE:'✅',FALSE:'❌',MISLEADING:'⚠️',UNVERIFIED:'🔍'}[v]||'❓';
+
+  const card=document.getElementById('vcard');
+  card.className=`vc ${vc}`;card.setAttribute('data-em',ve);
+  document.getElementById('vstamp').textContent=vs;
+  document.getElementById('vhead').textContent=verd.headline||claim;
+  document.getElementById('vbody').textContent=verd.summary||'';
+  const pct=Math.max(0,Math.min(100,fc.confidence||50));
+  setTimeout(()=>{document.getElementById('cfill').style.width=pct+'%';document.getElementById('cpct').textContent=pct+'%';},400);
+  document.getElementById('exptxt').textContent=verd.explanation||fc.reasoning||'';
+
+  // Source mode badge
+  const smb=document.getElementById('srcModeBadge');
+  if(searchMode==='mcp') smb.innerHTML='<span class="src-mode-badge mcp">🌐 Live news via MCP Server</span>';
+  else if(searchMode==='gemini') smb.innerHTML='<span class="src-mode-badge gsearch">🤖 Live search via Gemini Google Search</span>';
+  else smb.innerHTML='<span class="src-mode-badge training">📚 Analysis from Gemini training knowledge</span>';
+
+  // Evidence
+  const srcs=fc.analyzedSources?.length>0 ? fc.analyzedSources.slice(0,5) :
+    arts.slice(0,5).map((a,i)=>({index:i+1,sourceName:a.source,title:a.title,url:a.url,alignment:'neutral',credibilityNotes:a.description||''}));
+
+  const grid=document.getElementById('egrid');
+  if(!srcs.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:20px;background:var(--card);border:1px solid var(--br);border-radius:12px;text-align:center;color:var(--muted);font-size:13px;font-weight:600;">📚 Analysis based on Gemini AI training knowledge</div>`;
+  } else {
+    grid.innerHTML=srcs.map(s=>{
+      const ac=s.alignment==='supports'?'s':s.alignment==='contradicts'?'c':'n';
+      const al=s.alignment==='supports'?'✅ Supports':s.alignment==='contradicts'?'❌ Contradicts':'➖ Neutral';
+      const hasUrl=s.url&&s.url!=='#'&&s.url.startsWith('http');
+      return `<div class="ecard">
+        <div class="esrc">📰 ${s.sourceName||'Source'}</div>
+        <div class="etitle">${s.title||'Article'}</div>
+        <div class="enote">${s.credibilityNotes||''}</div>
+        <div class="efoot">
+          <span class="ebadge ${ac}">${al}</span>
+          ${hasUrl?`<a href="${s.url}" target="_blank" class="elink">Read →</a>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Breakdown
+  const n=verd.agentNotes||{};
+  document.getElementById('bktbl').innerHTML=[
+    {e:'🎯',a:'Orchestrator',t:n.orchestrator||`Classified claim as "${orch?.claimType||'factual'}" type with ${orch?.riskLevel||'medium'} risk. Generated ${orch?.queries?.length||3} search queries.`},
+    {e:'🔍',a:'Web Search',  t:n.search||(searchMode==='mcp'?`Retrieved ${arts.length} live articles via MCP server.`:searchMode==='gemini'?'Used Gemini built-in Google Search to find live news articles.':'No live search — Gemini used training knowledge.')},
+    {e:'📊',a:'Analyzer',    t:n.analyzer||`Analyzed ${fc.analyzedSources?.length||0} sources. ${fc.overallContext||''}`},
+    {e:'⚖️',a:'Fact Check',  t:n.factcheck||`${fc.reasoning||''} (${fc.supportingPoints?.length||0} supporting, ${fc.contradictingPoints?.length||0} contradicting evidence points)`},
+    {e:'📋',a:'Verdict',     t:verd.recommendation||'Verify from multiple trusted sources before sharing or acting on this information.'},
+  ].map(r=>`<div class="brow"><div class="bag">${r.e} ${r.a}</div><div class="btx">${r.t}</div></div>`).join('');
+
+  document.getElementById('res').classList.add('show');
+  const btn=document.getElementById('vBtn');btn.disabled=false;btn.classList.remove('loading');
+  document.getElementById('res').scrollIntoView({behavior:'smooth',block:'start'});
+  // Set research context for logging
+  setResearchCtx({
+    claim,
+    verdict: fc.verdict,
+    confidence: Math.max(0,Math.min(100,fc.confidence||50)),
+    articlesFound: arts.length + (fc.analyzedSources?.length||0),
+    searchMode,
+    latencyMs
+  });
+}
+
+/* ════════════════════════════════════════════
+   RESEARCH MODE — v7
+   Persistent dataset logging, live metrics,
+   calibration chart, ablation, CSV export
+════════════════════════════════════════════ */
+
+// Storage key
+const RK = 'nm:research:v1';
+let _records = [];
+
+async function loadRecords(){
+  try {
+    const r = localStorage.getItem(RK);
+    _records = r ? JSON.parse(r) : [];
+  } catch(e) { _records = []; }
+}
+
+async function saveRecords(){
+  try {
+    localStorage.setItem(RK, JSON.stringify(_records));
+    updateResBtn();
+  } catch(e) { console.warn('Storage save failed:', e); }
+}
+
+// Current verification context — populated after each run
+let _currentCtx = null;
+
+function setResearchCtx(ctx){
+  // ctx: { claim, verdict, confidence, articlesFound, searchMode, latencyMs }
+  _currentCtx = ctx;
+  const box = document.getElementById('rlogBox');
+  box.style.display = 'block';
+  // Reset form
+  ['rlogCat','rlogTrue','rlogCorrect'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('rlogNotes').value = '';
+  document.getElementById('rlogSaved').classList.remove('show');
+  // Show auto-captured data
+  document.getElementById('rlogAuto').innerHTML =
+    `<span>Verdict: <b>${ctx.verdict}</b></span>` +
+    `<span>Confidence: <b>${ctx.confidence}%</b></span>` +
+    `<span>Articles: <b>${ctx.articlesFound}</b></span>` +
+    `<span>Mode: <b>${ctx.searchMode}</b></span>` +
+    `<span>Latency: <b>${(ctx.latencyMs/1000).toFixed(1)}s</b></span>`;
+}
+
+async function saveRecord(){
+  if(!_currentCtx){ alert('Run a verification first!'); return; }
+  const cat = document.getElementById('rlogCat').value;
+  const tl  = document.getElementById('rlogTrue').value;
+  const cor = document.getElementById('rlogCorrect').value;
+  if(!cat || !tl || !cor){ alert('Please fill in Category, True Label, and Correct fields.'); return; }
+
+  const rec = {
+    id: Date.now(),
+    ts: new Date().toISOString(),
+    claim: _currentCtx.claim.substring(0, 120),
+    category: cat,
+    trueLabel: tl,
+    sysVerdict: _currentCtx.verdict,
+    confidence: _currentCtx.confidence,
+    articlesFound: _currentCtx.articlesFound,
+    searchMode: _currentCtx.searchMode,
+    latencyMs: _currentCtx.latencyMs,
+    correct: cor,
+    notes: document.getElementById('rlogNotes').value
+  };
+
+  _records.push(rec);
+  await saveRecords();
+
+  document.getElementById('rlogSaved').classList.add('show');
+  setTimeout(() => document.getElementById('rlogSaved').classList.remove('show'), 2000);
+  updateResBtn();
+}
+
+function updateResBtn(){
+  const btn = document.getElementById('resDashBtn');
+  btn.classList.toggle('has-data', _records.length > 0);
+  btn.title = `Research Dashboard (${_records.length} records)`;
+}
+
+function openR(){
+  document.getElementById('rpanelBg').classList.add('open');
+  renderDashboard();
+}
+function closeR(){ document.getElementById('rpanelBg').classList.remove('open'); }
+
+function renderDashboard(){
+  const recs = _records;
+  const n = recs.length;
+  document.getElementById('dsCount').textContent = n;
+  document.getElementById('sm-total').textContent = n;
+
+  if(n === 0){
+    ['sm-acc','sm-f1','sm-prec','sm-rec','sm-lat','sm-mcp-acc','sm-gem-acc'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    document.getElementById('catTable').innerHTML = '<div class="empty-state">No data yet.</div>';
+    document.getElementById('calChart').innerHTML = '<div class="empty-state">No data yet.</div>';
+    document.getElementById('ablTable').innerHTML = '<div class="empty-state">No data yet.</div>';
+    document.getElementById('dsTbody').innerHTML = '<tr><td colspan="10" class="empty-state">No records yet.</td></tr>';
+    return;
+  }
+
+  // Overall metrics
+  const correct = recs.filter(r => r.correct === 'yes').length;
+  const partial  = recs.filter(r => r.correct === 'partial').length;
+  const acc = ((correct + partial*0.5) / n * 100).toFixed(1);
+
+  // Binary precision/recall (treating correct=yes as TP for system confidence)
+  const tp = recs.filter(r => r.sysVerdict === r.trueLabel && r.correct === 'yes').length;
+  const fp = recs.filter(r => r.sysVerdict !== r.trueLabel && r.correct === 'no').length;
+  const fn = recs.filter(r => r.sysVerdict !== r.trueLabel && r.correct !== 'no').length;
+  const prec = tp + fp > 0 ? (tp / (tp + fp) * 100).toFixed(1) : '—';
+  const rec  = tp + fn > 0 ? (tp / (tp + fn) * 100).toFixed(1) : '—';
+  const f1   = prec !== '—' && rec !== '—'
+    ? (2 * parseFloat(prec) * parseFloat(rec) / (parseFloat(prec) + parseFloat(rec))).toFixed(1)
+    : '—';
+
+  const avgLat = (recs.reduce((s, r) => s + (r.latencyMs||0), 0) / n / 1000).toFixed(1);
+
+  // Ablation: MCP vs Gemini
+  const mcpRecs = recs.filter(r => r.searchMode === 'mcp');
+  const gemRecs = recs.filter(r => r.searchMode === 'gemini');
+  const mcpAcc = mcpRecs.length ? (mcpRecs.filter(r=>r.correct==='yes').length/mcpRecs.length*100).toFixed(1)+'%' : '—';
+  const gemAcc = gemRecs.length ? (gemRecs.filter(r=>r.correct==='yes').length/gemRecs.length*100).toFixed(1)+'%' : '—';
+
+  document.getElementById('sm-acc').textContent  = acc + '%';
+  document.getElementById('sm-f1').textContent   = f1 !== '—' ? f1 + '%' : '—';
+  document.getElementById('sm-prec').textContent = prec !== '—' ? prec + '%' : '—';
+  document.getElementById('sm-rec').textContent  = rec !== '—' ? rec + '%' : '—';
+  document.getElementById('sm-lat').textContent  = avgLat + 's';
+  document.getElementById('sm-mcp-acc').textContent = mcpAcc;
+  document.getElementById('sm-gem-acc').textContent = gemAcc;
+
+  // Category breakdown
+  const cats = {};
+  recs.forEach(r => {
+    if(!cats[r.category]) cats[r.category] = {total:0,correct:0,partial:0};
+    cats[r.category].total++;
+    if(r.correct==='yes') cats[r.category].correct++;
+    if(r.correct==='partial') cats[r.category].partial++;
+  });
+  const catHtml = `<table class="mtbl">
+    <thead><tr><th>Category</th><th>Total</th><th>Correct</th><th>Partial</th><th>Accuracy</th></tr></thead>
+    <tbody>${Object.entries(cats).map(([cat, d]) => {
+      const a = ((d.correct + d.partial*0.5)/d.total*100).toFixed(1);
+      return `<tr>
+        <td><span class="badge-cat">${cat}</span></td>
+        <td>${d.total}</td>
+        <td style="color:var(--green);font-weight:800">${d.correct}</td>
+        <td style="color:var(--amber);font-weight:800">${d.partial}</td>
+        <td><b>${a}%</b></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+  document.getElementById('catTable').innerHTML = catHtml;
+
+  // Confidence calibration
+  const bins = [
+    {label:'0–50%',  min:0,  max:50},
+    {label:'51–60%', min:51, max:60},
+    {label:'61–70%', min:61, max:70},
+    {label:'71–80%', min:71, max:80},
+    {label:'81–90%', min:81, max:90},
+    {label:'91–100%',min:91, max:100},
+  ];
+  const calHtml = bins.map(bin => {
+    const binRecs = recs.filter(r => r.confidence >= bin.min && r.confidence <= bin.max);
+    if(!binRecs.length) return `<div class="cal-row"><span class="cal-range">${bin.label}</span><div class="cal-bar-wrap"><div class="cal-bar" style="width:0%;background:var(--br2)"></div></div><span class="cal-val">—</span><span class="cal-n">(0)</span></div>`;
+    const acc2 = binRecs.filter(r=>r.correct==='yes').length / binRecs.length * 100;
+    const col = acc2 >= 80 ? 'var(--green)' : acc2 >= 60 ? 'var(--amber)' : 'var(--red)';
+    return `<div class="cal-row">
+      <span class="cal-range">${bin.label}</span>
+      <div class="cal-bar-wrap"><div class="cal-bar" style="width:${acc2}%;background:${col}"></div></div>
+      <span class="cal-val">${acc2.toFixed(0)}%</span>
+      <span class="cal-n">(n=${binRecs.length})</span>
+    </div>`;
+  }).join('');
+  document.getElementById('calChart').innerHTML = calHtml;
+
+  // Ablation table
+  const ablHtml = (mcpRecs.length || gemRecs.length) ? `<table class="mtbl">
+    <thead><tr><th>Search Mode</th><th>Tests</th><th>Correct</th><th>Accuracy</th><th>Avg Confidence</th><th>Avg Latency</th></tr></thead>
+    <tbody>
+      ${[{label:'🌐 MCP Server', recs2: mcpRecs},{label:'🤖 Gemini Search', recs2: gemRecs}].map(({label, recs2}) => {
+        if(!recs2.length) return `<tr><td>${label}</td><td colspan="5" style="color:var(--muted)">No data yet</td></tr>`;
+        const a2 = (recs2.filter(r=>r.correct==='yes').length/recs2.length*100).toFixed(1);
+        const avgC = (recs2.reduce((s,r)=>s+r.confidence,0)/recs2.length).toFixed(1);
+        const avgL = (recs2.reduce((s,r)=>s+(r.latencyMs||0),0)/recs2.length/1000).toFixed(1);
+        return `<tr><td><b>${label}</b></td><td>${recs2.length}</td><td>${recs2.filter(r=>r.correct==='yes').length}</td><td><b>${a2}%</b></td><td>${avgC}%</td><td>${avgL}s</td></tr>`;
+      }).join('')}
+    </tbody>
+  </table>` : '<div class="empty-state">Need tests from both MCP and Gemini modes.</div>';
+  document.getElementById('ablTable').innerHTML = ablHtml;
+
+  // Full dataset table
+  const vc = {TRUE:'v-t',FALSE:'v-f',MISLEADING:'v-m',UNVERIFIED:'v-u',SATIRE:'v-m'};
+  const rows = [...recs].reverse().map((r, i) => `<tr>
+    <td>${recs.length - i}</td>
+    <td title="${r.claim}">${r.claim.substring(0,40)}…</td>
+    <td><span class="badge-cat" style="font-size:9px">${r.category}</span></td>
+    <td class="${vc[r.trueLabel]||''}">${r.trueLabel}</td>
+    <td class="${vc[r.sysVerdict]||''}">${r.sysVerdict}</td>
+    <td style="font-family:monospace">${r.confidence}%</td>
+    <td>${r.correct==='yes'?'<span class="chk-y">✅</span>':r.correct==='partial'?'<span class="chk-n">⚠️</span>':'<span class="chk-n">❌</span>'}</td>
+    <td>${r.searchMode}</td>
+    <td style="font-family:monospace">${((r.latencyMs||0)/1000).toFixed(1)}s</td>
+    <td style="font-family:monospace">${r.articlesFound}</td>
+  </tr>`).join('');
+  document.getElementById('dsTbody').innerHTML = rows || '<tr><td colspan="10" class="empty-state">No records.</td></tr>';
+}
+
+function exportCSV(){
+  if(!_records.length){ alert('No records to export.'); return; }
+  const headers = ['ID','Timestamp','Claim','Category','TrueLabel','SystemVerdict','Confidence_pct','Correct','SearchMode','Latency_ms','ArticlesFound','Notes'];
+  const rows = _records.map(r => [
+    r.id, r.ts,
+    `"${(r.claim||'').replace(/"/g,'""')}"`,
+    r.category, r.trueLabel, r.sysVerdict, r.confidence,
+    r.correct, r.searchMode, r.latencyMs||0, r.articlesFound||0,
+    `"${(r.notes||'').replace(/"/g,'""')}"`
+  ].join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `newsmate_research_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function exportJSON(){
+  if(!_records.length){ alert('No records to export.'); return; }
+  const blob = new Blob([JSON.stringify(_records, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `newsmate_research_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+async function clearData(){
+  if(!confirm(`Delete all ${_records.length} research records? This cannot be undone.`)) return;
+  _records = [];
+  await saveRecords();
+  renderDashboard();
+}
+
+// Init on load
+loadRecords().then(() => { updateResBtn(); });
+
+</script>
+</body>
+</html>
