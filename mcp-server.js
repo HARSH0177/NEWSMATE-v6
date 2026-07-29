@@ -20,7 +20,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ─── API Keys (Loaded from process.env / Railway Environment Variables) ──────
 const NEWS_API_KEY = process.env.NEWS_API_KEY || '9550ad0e2cba4aa9b654bf68694cea23';
 const GNEWS_API_KEY = process.env.GNEWS_API_KEY || 'bff953d35e1603c9e54aa91dc79dba70';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAjEc1RDR57EDPyxF3dbawqsmVizsQiRD4';
+const GEMINI_KEYS = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || 'AIzaSyAjEc1RDR57EDPyxF3dbawqsmVizsQiRD4')
+  .split(',')
+  .map(k => k.trim())
+  .filter(Boolean);
+
+let currentKeyIndex = 0;
 
 // ─── Source Whitelist (19 Authorized) ───────────────────────────────────────
 const SOURCES = {
@@ -217,17 +222,33 @@ app.get('/trending', async (_, res) => {
 
 app.post('/api/gemini', async (req, res) => {
   const { model = 'gemini-2.5-flash', prompt, maxTok = 800, tools = null } = req.body || {};
-  const key = req.headers['x-gemini-key'] || GEMINI_API_KEY;
-  if (!key) return res.status(400).json({ error: { message: 'Gemini API key not configured on server' } });
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const customKey = req.headers['x-gemini-key'];
+  const keysToTry = customKey ? [customKey] : GEMINI_KEYS;
+
   const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTok, temperature: 0.2 } };
   if (tools) body.tools = tools;
-  try {
-    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await resp.json();
-    res.status(resp.status).json(data);
-  } catch (e) {
-    res.status(500).json({ error: { message: e.message } });
+
+  for (let attempt = 0; attempt < keysToTry.length; attempt++) {
+    const activeIndex = (currentKeyIndex + attempt) % keysToTry.length;
+    const key = keysToTry[activeIndex];
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+
+    try {
+      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await resp.json();
+
+      if (resp.status === 429 && keysToTry.length > 1) {
+        console.warn(`[Proxy] ⚡ Key #${activeIndex + 1} hit 429. Instantly rotating to Key #${(activeIndex + 1) % keysToTry.length + 1}…`);
+        currentKeyIndex = (currentKeyIndex + 1) % keysToTry.length;
+        continue;
+      }
+
+      return res.status(resp.status).json(data);
+    } catch (e) {
+      if (attempt === keysToTry.length - 1) {
+        return res.status(500).json({ error: { message: e.message } });
+      }
+    }
   }
 });
 
