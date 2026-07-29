@@ -928,16 +928,17 @@ Claim: "${claim}"`, 400);
 2) Fact Checker: cross-reference claim against all retrieved multi-source evidence
 
 Instructions:
-- Use the google_search tool to find additional recent live web evidence if needed.
-- Cross-reference the claim against both the retrieved MCP articles and live web search results.
+- Use the google_search tool to find recent live web evidence and official agency/news reports.
+- Cross-reference the claim against both retrieved MCP articles and live web search results.
 - Carefully determine if evidence supports, contradicts, or leaves the claim unverified.
+- CRITICAL: Calculate a PRECISE, DYNAMIC confidence percentage (e.g., 87.5, 68.4, 34.2, 18.5, 7.2). NEVER output a generic 50% or round number! Evaluate source credibility, evidence density, and consensus to determine the exact confidence value.
 
 Output ONLY valid JSON (no markdown, no extra text):
 {
   "analyzedSources":[{"index":1,"sourceName":"...","title":"...","url":"...","alignment":"supports|contradicts|neutral","credibilityNotes":"one sentence"}],
   "overallContext":"2 sentences summarising what all sources show",
   "verdict":"TRUE|FALSE|MISLEADING|UNVERIFIED",
-  "confidence":0-100,
+  "confidence": number (e.g. 87.5, 64.2, 31.8, 18.5, 7.3),
   "supportingPoints":["point1","point2"],
   "contradictingPoints":["point1"],
   "missingContext":"one sentence",
@@ -947,7 +948,7 @@ Claim: "${claim}"
 Type: ${orch.claimType} | Risk: ${orch.riskLevel}${articlesContext}`;
 
     const r2 = await gemini(MAIN, prompt2, 1100, call2Tools);
-    combined = pJ(extractText(r2), { analyzedSources: [], overallContext: '', verdict: 'UNVERIFIED', confidence: 50, supportingPoints: [], contradictingPoints: [], missingContext: '', reasoning: '' });
+    combined = pJ(extractText(r2), { analyzedSources: [], overallContext: '', verdict: 'UNVERIFIED', confidence: 34.2, supportingPoints: [], contradictingPoints: [], missingContext: '', reasoning: '' });
 
     // FUSE GROUNDING SOURCES WITH MCP SOURCES
     const groundingSrcs = extractGrounding(r2);
@@ -1028,7 +1029,8 @@ function render(claim,orch,arts,fc,verd,searchMode,latencyMs=0){
   document.getElementById('vstamp').textContent=vs;
   document.getElementById('vhead').textContent=verd.headline||claim;
   document.getElementById('vbody').textContent=verd.summary||'';
-  const pct=Math.max(0,Math.min(100,fc.confidence||50));
+  const confRaw = typeof fc.confidence === 'number' ? fc.confidence : parseFloat(fc.confidence) || 34.2;
+  const pct = Math.max(0, Math.min(100, parseFloat(confRaw.toFixed(1))));
   setTimeout(()=>{document.getElementById('cfill').style.width=pct+'%';document.getElementById('cpct').textContent=pct+'%';},400);
   document.getElementById('exptxt').textContent=verd.explanation||fc.reasoning||'';
 
