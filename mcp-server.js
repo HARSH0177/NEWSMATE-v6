@@ -8,7 +8,7 @@ const { SSEServerTransport } = require('@modelcontextprotocol/sdk/server/sse.js'
 const { z } = require('zod');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // ─── CORS ───────────────────────────────────────────────────────────────────
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Accept'], credentials: false, maxAge: 86400 }));
