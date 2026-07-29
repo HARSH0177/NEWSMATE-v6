@@ -798,6 +798,51 @@ function extractGrounding(d){
   })).filter(c=>c.url!=='#');
 }
 
+function calcMathConfidence(sources, verdict, riskLevel, llmConf){
+  const K = sources.length;
+  if(K === 0){
+    if(verdict === 'UNVERIFIED') return 21.4;
+    return Math.min(84.5, Math.max(12.3, llmConf || 34.2));
+  }
+  let TP = 0, FP = 0, TN = 0, FN = 0, weightedSum = 0;
+  const authDomains = ['bbc.com','reuters.com','cnn.com','indiatoday.in','theguardian.com','apnews.com','thehindu.com','ndtv.com','aljazeera.com','bloomberg.com'];
+
+  sources.forEach(s => {
+    const sName = (s.sourceName || s.source || '').toLowerCase();
+    const isAuth = authDomains.some(d => sName.includes(d.split('.')[0])) || s.credibilityNotes?.toLowerCase().includes('authorized');
+    const w = isAuth ? 1.0 : 0.65;
+
+    if(verdict === 'TRUE'){
+      if(s.alignment === 'supports') TP += w;
+      else if(s.alignment === 'contradicts') FP += w;
+    } else if(verdict === 'FALSE'){
+      if(s.alignment === 'contradicts') TN += w;
+      else if(s.alignment === 'supports') FN += w;
+    } else {
+      if(s.alignment === 'supports') TP += 0.5 * w;
+      else if(s.alignment === 'contradicts') TN += 0.5 * w;
+    }
+    weightedSum += w;
+  });
+
+  const total = TP + FP + TN + FN + 0.0001;
+  const S_consensus = (TP + TN) / total;
+
+  const riskPenalty = riskLevel === 'high' ? 0.15 : riskLevel === 'medium' ? 0.08 : 0.03;
+  const neutralCount = sources.filter(s => s.alignment === 'neutral').length;
+  const entropyPenalty = (neutralCount / (K || 1)) * 0.12;
+  const Omega = Math.max(0.45, 1.0 - riskPenalty - entropyPenalty);
+
+  let rawScore = (0.65 * S_consensus + 0.35 * (weightedSum / K)) * Omega * 100;
+  if(typeof llmConf === 'number' && llmConf > 0){
+    rawScore = 0.65 * rawScore + 0.35 * llmConf;
+  }
+  if(verdict === 'UNVERIFIED'){
+    rawScore = Math.min(48.5, Math.max(7.2, rawScore * 0.55));
+  }
+  return parseFloat(Math.min(98.8, Math.max(5.1, rawScore)).toFixed(1));
+}
+
 function pJ(raw,fb){
   try{
     const firstBrace = raw.indexOf('{');
@@ -962,6 +1007,9 @@ Type: ${orch.claimType} | Risk: ${orch.riskLevel}${articlesContext}`;
         credibilityNotes: 'Retrieved via Gemini Google Search Grounding'
       }));
     }
+
+    // Mathematical Fact-Checking Confidence Formula (TP, FP, TN, FN + Source Weights + Entropy)
+    combined.confidence = calcMathConfidence(combined.analyzedSources||[], combined.verdict, orch?.riskLevel||'medium', combined.confidence);
 
     setAg(2,'done',`✅ ${combined.analyzedSources?.length||0} sources`);
     setAg(3,'done',`✅ ${combined.verdict}`);
