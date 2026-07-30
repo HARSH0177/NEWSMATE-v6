@@ -385,7 +385,7 @@ textarea#claim::placeholder{color:var(--muted);font-weight:400;font-style:italic
   </div>
 
   <div>
-    <div class="rs-hdr">📈 Overall Performance Metrics</div>
+    <div class="rs-hdr">📈 Overall Performance & MLOps Telemetry</div>
     <div class="stat-row" id="statRow">
       <div class="stat-card"><div class="stat-val" id="sm-total">0</div><div class="stat-lbl">Total Tests</div></div>
       <div class="stat-card green"><div class="stat-val" id="sm-acc">—</div><div class="stat-lbl">Accuracy</div></div>
@@ -395,8 +395,27 @@ textarea#claim::placeholder{color:var(--muted);font-weight:400;font-style:italic
     <div class="stat-row" style="margin-top:10px">
       <div class="stat-card"><div class="stat-val" id="sm-prec">—</div><div class="stat-lbl">Precision</div></div>
       <div class="stat-card"><div class="stat-val" id="sm-rec">—</div><div class="stat-lbl">Recall</div></div>
-      <div class="stat-card"><div class="stat-val" id="sm-mcp-acc">—</div><div class="stat-lbl">MCP Mode Acc.</div></div>
-      <div class="stat-card"><div class="stat-val" id="sm-gem-acc">—</div><div class="stat-lbl">Gemini Mode Acc.</div></div>
+      <div class="stat-card purple"><div class="stat-val" id="sm-brier">—</div><div class="stat-lbl">Brier Score (BS)</div></div>
+      <div class="stat-card"><div class="stat-val" id="sm-p95">—</div><div class="stat-lbl">p95 Latency</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rs-hdr">⚡ Agent DAG Execution Graph & Node Architecture</div>
+    <div style="background:var(--card);border:1px solid var(--br);border-radius:12px;padding:14px;margin-bottom:15px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:11.5px;font-weight:600;">
+        <div style="background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--br)">🛡️ Input Guardrail</div>
+        <span>➔</span>
+        <div style="background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--br)">🎯 Orchestrator</div>
+        <span>➔</span>
+        <div style="background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--br)">🌐 MCP + Google Fused</div>
+        <span>➔</span>
+        <div style="background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--br)">🔬 CRAG Auditor</div>
+        <span>➔</span>
+        <div style="background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--br)">📐 Math Engine</div>
+        <span>➔</span>
+        <div style="background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--br)">📋 Verdict Writer</div>
+      </div>
     </div>
   </div>
 
@@ -406,14 +425,14 @@ textarea#claim::placeholder{color:var(--muted);font-weight:400;font-style:italic
   </div>
 
   <div>
-    <div class="rs-hdr">📐 Confidence Calibration</div>
-    <p style="font-size:11.5px;color:var(--muted);margin-bottom:10px">When system says X% confident, how often is it actually correct? Ideal: bars should match confidence levels.</p>
+    <div class="rs-hdr">📐 Confidence Calibration & Brier Score Analysis</div>
+    <p style="font-size:11.5px;color:var(--muted);margin-bottom:10px">Calibration reliability diagram ($BS = \frac{1}{N} \sum (p_i - o_i)^2$). Lower Brier Score represents higher probability calibration.</p>
     <div id="calChart"><div class="empty-state">No data yet.</div></div>
   </div>
 
   <div>
-    <div class="rs-hdr">🔬 Ablation: MCP vs Gemini Search</div>
-    <div id="ablTable"><div class="empty-state">Need data from both search modes to compare.</div></div>
+    <div class="rs-hdr">🔬 3-Arm Ablation Study: Zero-Retrieval vs Gemini Search vs MCP Fused</div>
+    <div id="ablTable"><div class="empty-state">Need data from ablation arms to compare.</div></div>
   </div>
 
   <div>
@@ -1277,19 +1296,32 @@ function renderDashboard(){
 
   const avgLat = (recs.reduce((s, r) => s + (r.latencyMs||0), 0) / n / 1000).toFixed(1);
 
-  // Ablation: MCP vs Gemini
-  const mcpRecs = recs.filter(r => r.searchMode === 'mcp');
-  const gemRecs = recs.filter(r => r.searchMode === 'gemini');
-  const mcpAcc = mcpRecs.length ? (mcpRecs.filter(r=>r.correct==='yes').length/mcpRecs.length*100).toFixed(1)+'%' : '—';
-  const gemAcc = gemRecs.length ? (gemRecs.filter(r=>r.correct==='yes').length/gemRecs.length*100).toFixed(1)+'%' : '—';
+  // Calculate Brier Score (BS = 1/N * sum((p - o)^2))
+  let brierSum = 0;
+  recs.forEach(r => {
+    const p = (r.confidence || 50) / 100;
+    const o = r.correct === 'yes' ? 1 : 0;
+    brierSum += Math.pow(p - o, 2);
+  });
+  const brierScore = (brierSum / n).toFixed(4);
+
+  // Calculate p95 Latency
+  const sortedLat = [...recs].map(r => r.latencyMs || 0).sort((a,b) => a - b);
+  const p95Index = Math.min(sortedLat.length - 1, Math.floor(sortedLat.length * 0.95));
+  const p95Lat = (sortedLat[p95Index] / 1000).toFixed(1);
+
+  // 3-Arm Ablation Breakdown
+  const zeroRecs = recs.filter(r => r.searchMode === 'zero' || r.searchMode === 'training');
+  const gemRecs  = recs.filter(r => r.searchMode === 'gemini');
+  const mcpRecs  = recs.filter(r => r.searchMode === 'mcp' || r.searchMode === 'dual');
 
   document.getElementById('sm-acc').textContent  = acc + '%';
   document.getElementById('sm-f1').textContent   = f1 !== '—' ? f1 + '%' : '—';
   document.getElementById('sm-prec').textContent = prec !== '—' ? prec + '%' : '—';
   document.getElementById('sm-rec').textContent  = rec !== '—' ? rec + '%' : '—';
   document.getElementById('sm-lat').textContent  = avgLat + 's';
-  document.getElementById('sm-mcp-acc').textContent = mcpAcc;
-  document.getElementById('sm-gem-acc').textContent = gemAcc;
+  document.getElementById('sm-brier').textContent = brierScore;
+  document.getElementById('sm-p95').textContent = p95Lat + 's';
 
   // Category breakdown
   const cats = {};
@@ -1337,19 +1369,23 @@ function renderDashboard(){
   }).join('');
   document.getElementById('calChart').innerHTML = calHtml;
 
-  // Ablation table
-  const ablHtml = (mcpRecs.length || gemRecs.length) ? `<table class="mtbl">
-    <thead><tr><th>Search Mode</th><th>Tests</th><th>Correct</th><th>Accuracy</th><th>Avg Confidence</th><th>Avg Latency</th></tr></thead>
+  // 3-Arm Ablation Table
+  const ablHtml = `<table class="mtbl">
+    <thead><tr><th>Ablation Arm</th><th>Tests</th><th>Correct</th><th>Accuracy</th><th>Avg Confidence</th><th>Avg Latency</th></tr></thead>
     <tbody>
-      ${[{label:'🌐 MCP Server', recs2: mcpRecs},{label:'🤖 Gemini Search', recs2: gemRecs}].map(({label, recs2}) => {
-        if(!recs2.length) return `<tr><td>${label}</td><td colspan="5" style="color:var(--muted)">No data yet</td></tr>`;
+      ${[
+        {label:'🧠 Zero-Retrieval Baseline', recs2: zeroRecs},
+        {label:'🤖 Gemini Search Grounding', recs2: gemRecs},
+        {label:'🌐 MCP + Google Search Fused', recs2: mcpRecs}
+      ].map(({label, recs2}) => {
+        if(!recs2.length) return `<tr><td>${label}</td><td colspan="5" style="color:var(--muted)">No data logged yet</td></tr>`;
         const a2 = (recs2.filter(r=>r.correct==='yes').length/recs2.length*100).toFixed(1);
         const avgC = (recs2.reduce((s,r)=>s+r.confidence,0)/recs2.length).toFixed(1);
         const avgL = (recs2.reduce((s,r)=>s+(r.latencyMs||0),0)/recs2.length/1000).toFixed(1);
         return `<tr><td><b>${label}</b></td><td>${recs2.length}</td><td>${recs2.filter(r=>r.correct==='yes').length}</td><td><b>${a2}%</b></td><td>${avgC}%</td><td>${avgL}s</td></tr>`;
       }).join('')}
     </tbody>
-  </table>` : '<div class="empty-state">Need tests from both MCP and Gemini modes.</div>';
+  </table>`;
   document.getElementById('ablTable').innerHTML = ablHtml;
 
   // Full dataset table
