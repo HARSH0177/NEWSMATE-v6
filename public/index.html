@@ -466,8 +466,8 @@ textarea#claim::placeholder{color:var(--muted);font-weight:400;font-style:italic
   <div class="hdr-hr"><span></span><div class="orb"></div><span></span></div>
   <p class="hdr-sub">🔎 Paste any headline or claim — 5 AI agents fact-check it using live news sources and deliver a verdict.</p>
   <div class="mode-row">
-    <div class="mode-pill"><span class="dot-g"></span>gemini-2.5-flash · 500/day free</div>
-    <div class="mode-pill"><span class="dot-g"></span>gemini-2.5-flash-lite · 1000/day free</div>
+    <div class="mode-pill"><span class="dot-g"></span>gemini-3.6-flash · 500/day free</div>
+    <div class="mode-pill"><span class="dot-g"></span>gemini-3.6-flash · 1000/day free</div>
   </div>
   <div class="quota-bar" id="quotaBar">
     <div class="q-pill"><span class="q-dot" id="qDot"></span>Session calls: <span id="qCount" style="font-family:'JetBrains Mono',monospace;font-size:11px">0</span></div>
@@ -950,7 +950,7 @@ async function go(){
     ═══════════════════════════════ */
     setCallDot(1,'active');
     setAg(0,'run','🤔 thinking…');
-    addLog('info','🎯 Call 1/3 → Orchestrator (gemini-2.5-flash)…');
+    addLog('info','🎯 Call 1/3 → Orchestrator (gemini-3.6-flash)…');
 
     const r1=await gemini(MAIN,
       `You are the Orchestrator AI for NewsMate, a news fact-checker.
@@ -1060,12 +1060,11 @@ Type: ${orch.claimType} | Risk: ${orch.riskLevel}${articlesContext}`;
 
     /* ═══════════════════════════════
        CALL 3 — Verdict
-       Model: gemini-2.5-flash-lite
-       (auto-fallback to MAIN on 503)
+       Model: gemini-3.6-flash
     ═══════════════════════════════ */
     setCallDot(3,'active');
     setAg(4,'run','✍️ writing…');
-    addLog('info','📋 Call 3/3 → Verdict (gemini-2.5-flash-lite, fallback to flash)…');
+    addLog('info','📋 Call 3/3 → Verdict (gemini-3.6-flash)…');
 
     const r3=await gemini(LITE,
       `You are the Verdict Writer for NewsMate, a student news fact-checker.
