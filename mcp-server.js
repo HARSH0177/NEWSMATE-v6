@@ -227,7 +227,7 @@ app.get('/trending', async (_, res) => {
 });
 
 app.post('/api/gemini', async (req, res) => {
-  const { model = 'gemini-1.5-flash', prompt, maxTok = 800, tools = null, responseSchema = null, responseMimeType = null } = req.body || {};
+  const { model = 'gemini-2.0-flash', prompt, maxTok = 800, tools = null, responseSchema = null, responseMimeType = null } = req.body || {};
   const customKey = req.headers['x-gemini-key'];
   const keysToTry = customKey ? [customKey] : GEMINI_KEYS;
 
