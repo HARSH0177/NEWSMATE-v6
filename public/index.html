@@ -765,8 +765,24 @@ async function gemini(model, prompt, maxTok=800, tools=null, tries=3, responseSc
 
   for(let i=0;i<=tries;i++){
     let r;
-    try{ r=await fetch(url,{method:'POST',headers:reqHeaders,body:JSON.stringify(body)}); }
-    catch(e){ throw new Error(`Network error: ${e.message}. Check your internet connection.`); }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), tools ? 12000 : 8000);
+
+    try{
+      r=await fetch(url,{method:'POST',headers:reqHeaders,body:JSON.stringify(body),signal:controller.signal});
+      clearTimeout(timeoutId);
+    }
+    catch(e){
+      clearTimeout(timeoutId);
+      if(e.name === 'AbortError'){
+        if(tools){
+          addLog('warn',`⚡ Search Grounding timed out (12s limit) — falling back instantly without web grounding…`);
+          return await gemini(model, prompt, maxTok, null, tries, responseSchema);
+        }
+        throw new Error(`Request timed out after 8s. Check connection and try again.`);
+      }
+      throw new Error(`Network error: ${e.message}. Check your internet connection.`);
+    }
 
     if(r.ok){ bumpQ(); const d=await r.json(); return d; }
 
