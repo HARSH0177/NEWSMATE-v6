@@ -151,10 +151,49 @@ async function fromDuckDuckGo(q, max) {
   } catch (e) { console.error('[DuckDuckGo]', e.message); return []; }
 }
 
+// ─── Google News RSS feed search (free, live, no API key required) ───────────
+async function fromGoogleNewsRSS(q, max) {
+  try {
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
+    const xml = await httpGetText(url);
+    const results = [];
+    const items = xml.split('<item>');
+    for (let i = 1; i < items.length && results.length < max; i++) {
+      const item = items[i];
+      const titleMatch = item.match(/<title>([^<]+)<\/title>/);
+      const linkMatch = item.match(/<link>([^<]+)<\/link>/);
+      const pubMatch = item.match(/<pubDate>([^<]+)<\/pubDate>/);
+      const rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
+      const rawLink = linkMatch ? linkMatch[1].trim() : '';
+      if (rawTitle && rawLink) {
+        const parts = rawTitle.split(' - ');
+        const mainTitle = parts.length > 1 ? parts.slice(0, -1).join(' - ') : rawTitle;
+        const sourceName = parts.length > 1 ? parts[parts.length - 1] : 'Google News';
+        const isA = isAuth(sourceName) || isAuth(rawLink);
+        results.push({
+          title: mainTitle,
+          description: `Published: ${pubMatch ? pubMatch[1] : ''}`,
+          url: rawLink,
+          source: isA ? (srcName(sourceName) || srcName(rawLink) || sourceName) : sourceName,
+          provider: 'googlenews_rss',
+          publishedAt: pubMatch ? pubMatch[1] : '',
+          authorized: isA
+        });
+      }
+    }
+    return results;
+  } catch (e) { console.error('[GoogleNewsRSS]', e.message); return []; }
+}
+
 async function searchAll(q, max) {
-  const [a, b, c] = await Promise.all([fromNewsAPI(q, max), fromGNews(q, max), fromDuckDuckGo(q, Math.min(max, 5))]);
+  const [a, b, c, d] = await Promise.all([
+    fromNewsAPI(q, max),
+    fromGNews(q, max),
+    fromDuckDuckGo(q, Math.min(max, 5)),
+    fromGoogleNewsRSS(q, max)
+  ]);
   const seen = new Set(), out = [];
-  const combined = [...a, ...b, ...c];
+  const combined = [...a, ...b, ...c, ...d];
   // Prioritize authorized sources first
   combined.sort((x, y) => (y.authorized ? 1 : 0) - (x.authorized ? 1 : 0));
   for (const x of combined) {
