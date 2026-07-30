@@ -760,7 +760,7 @@ async function gemini(model, prompt, maxTok=800, tools=null, tries=3, responseSc
   for(let i=0;i<=tries;i++){
     let r;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), tools ? 12000 : 8000);
+    const timeoutId = setTimeout(() => controller.abort(), tools ? 12000 : 25000);
 
     try{
       r=await fetch(url,{method:'POST',headers:reqHeaders,body:JSON.stringify(body),signal:controller.signal});
@@ -866,8 +866,16 @@ function calcMathConfidence(sources, verdict, riskLevel, llmConf){
   const Omega = Math.max(0.45, 1.0 - riskPenalty - entropyPenalty);
 
   let rawScore = (0.65 * S_consensus + 0.35 * (weightedSum / K)) * Omega * 100;
+
+  // Source-count confidence floor: when we have many sources, ensure minimum confidence
+  // even if LLM marked everything as 'neutral' (common when sources exist but alignment parsing fails)
+  const sourceFloor = Math.min(85, 45 + K * 5); // 50% for 1 source, 70% for 5, 85% cap
+  if((verdict === 'TRUE' || verdict === 'FALSE') && K >= 2 && rawScore < sourceFloor){
+    rawScore = sourceFloor;
+  }
+
   if(typeof llmConf === 'number' && llmConf > 0){
-    rawScore = 0.65 * rawScore + 0.35 * llmConf;
+    rawScore = 0.7 * rawScore + 0.3 * llmConf;
   }
   if(verdict === 'UNVERIFIED'){
     rawScore = Math.min(48.5, Math.max(7.2, rawScore * 0.55));
