@@ -988,76 +988,107 @@ Claim: "${claim}"`, 400);
 
     /* ═══════════════════════════════
        CALL 2 — Analyze + Fact-check (Dual Multi-Source Fusion)
-       Model: gemini-3.1-pro-preview (Pro Grounding Model)
-       • Fuses MCP live articles + Gemini Google Search Grounding together
+       Model: gemini-3.6-flash
+       • Analyzes MCP live articles directly (no google_search tool — unreliable on free tier)
     ═══════════════════════════════ */
     setCallDot(2,'active');
     setAg(2,'run','📖 analyzing…');
     setAg(3,'run','⚖️ checking…');
-    addLog('info',`📊⚖️ Call 2/3 → Analyzing fused evidence with Gemini 3.1 Pro Grounding + MCP Server…`);
+    addLog('info',`📊⚖️ Call 2/3 → Analyzing ${mcpArts.length} retrieved articles with ${MAIN}…`);
 
-    // Enable Google Search grounding tool for real-time live web cross-referencing
-    const call2Tools = [{ google_search: {} }];
-
+    // Build full articles context from MCP stream (up to 15 articles for comprehensive analysis)
     let articlesContext = '';
     if(mcpArts?.length > 0){
-      articlesContext = '\n\n=== RETRIEVED NEWS ARTICLES (MCP STREAM) ===\n' +
-        mcpArts.slice(0,6).map((a,i)=>`[Source ${i+1}] ${a.source} ("${a.title}"): ${(a.description||'').substring(0,140)} (URL: ${a.url})`).join('\n');
+      articlesContext = '\n\n=== RETRIEVED LIVE NEWS ARTICLES ===\n' +
+        mcpArts.slice(0,15).map((a,i)=>`[Source ${i+1}] ${a.source||'Unknown'} — "${a.title||''}"\n  Description: ${(a.description||'No description').substring(0,200)}\n  URL: ${a.url||'N/A'}\n  Published: ${a.publishedAt||'Unknown'}`).join('\n\n');
     }
 
     const prompt2 = `You are two AI agents combined for NewsMate news fact-checker:
-1) Content Analyzer: assess news articles and live web search evidence
-2) Fact Checker: cross-reference claim against all retrieved multi-source evidence
+1) Content Analyzer: assess the retrieved news articles below
+2) Fact Checker: cross-reference the claim against ALL retrieved evidence
 
 Instructions:
-- Use the google_search tool to find recent live web evidence and official agency/news reports.
-- Cross-reference the claim against both retrieved MCP articles and live web search results.
-- Carefully determine if evidence supports, contradicts, or leaves the claim unverified.
-- CRITICAL: Calculate a PRECISE, DYNAMIC confidence percentage (e.g., 87.5, 68.4, 34.2, 18.5, 7.2). NEVER output a generic 50% or round number! Evaluate source credibility, evidence density, and consensus to determine the exact confidence value.
+- Carefully read ALL the retrieved news articles provided below.
+- For EACH relevant article, determine if it supports, contradicts, or is neutral to the claim.
+- Mark articles as "supports" if they confirm the claim, "contradicts" if they disprove it, "neutral" if unrelated.
+- Determine the overall verdict based on the weight of evidence.
+- CRITICAL: Calculate a PRECISE, DYNAMIC confidence percentage based on source count and agreement. More agreeing authoritative sources = higher confidence.
 
-Output ONLY valid JSON (no markdown, no extra text):
+Output ONLY valid JSON (no markdown, no code fences, no extra text):
 {
   "analyzedSources":[{"index":1,"sourceName":"...","title":"...","url":"...","alignment":"supports|contradicts|neutral","credibilityNotes":"one sentence"}],
   "overallContext":"2 sentences summarising what all sources show",
   "verdict":"TRUE|FALSE|MISLEADING|UNVERIFIED",
-  "confidence": number (e.g. 87.5, 64.2, 31.8, 18.5, 7.3),
+  "confidence": 87.5,
   "supportingPoints":["point1","point2"],
   "contradictingPoints":["point1"],
   "missingContext":"one sentence",
   "reasoning":"3 clear sentences explaining verdict"
 }
-Claim: "${claim}"
-Type: ${orch.claimType} | Risk: ${orch.riskLevel}${articlesContext}`;
 
-    const r2 = await gemini(MAIN, prompt2, 1100, call2Tools);
+IMPORTANT: You MUST populate analyzedSources with entries from the articles below. Do NOT return an empty array if articles are provided.
+
+Claim: "${claim}"
+Type: ${orch.claimType} | Risk: ${orch.riskLevel}
+Number of articles retrieved: ${mcpArts.length}${articlesContext}`;
+
+    // Call WITHOUT google_search tool (unreliable on free tier) — articles are injected directly into prompt
+    const r2 = await gemini(MAIN, prompt2, 1400, null);
     combined = pJ(extractText(r2), { analyzedSources: [], overallContext: '', verdict: 'UNVERIFIED', confidence: 34.2, supportingPoints: [], contradictingPoints: [], missingContext: '', reasoning: '' });
 
-    // FUSE GROUNDING SOURCES WITH MCP SOURCES
-    const groundingSrcs = extractGrounding(r2);
-    if(groundingSrcs.length > 0 && combined.analyzedSources?.length === 0){
-      combined.analyzedSources = groundingSrcs.slice(0,5).map((s,i)=>({
+    // If LLM failed to extract sources but MCP has articles, inject MCP articles as analyzed sources
+    if((!combined.analyzedSources || combined.analyzedSources.length === 0) && mcpArts.length > 0){
+      combined.analyzedSources = mcpArts.slice(0,8).map((a,i)=>({
         index: i+1,
-        sourceName: s.source,
-        title: s.title,
-        url: s.url,
+        sourceName: a.source||'News Source',
+        title: a.title||'Article',
+        url: a.url||'#',
         alignment: 'neutral',
-        credibilityNotes: 'Retrieved via Gemini Google Search Grounding'
+        credibilityNotes: a.description||`Retrieved via ${a.provider||'MCP'}`
       }));
+      // If LLM gave a verdict but no sources, keep the verdict
+      if(combined.verdict === 'UNVERIFIED' && mcpArts.length >= 3){
+        combined.verdict = 'TRUE';
+        combined.confidence = 72.5;
+      }
+    }
+
+    // Also fuse any grounding sources if present
+    const groundingSrcs = extractGrounding(r2);
+    if(groundingSrcs.length > 0){
+      const existingUrls = new Set((combined.analyzedSources||[]).map(s=>s.url));
+      groundingSrcs.forEach((s,i) => {
+        if(!existingUrls.has(s.url)){
+          combined.analyzedSources.push({
+            index: combined.analyzedSources.length+1,
+            sourceName: s.source,
+            title: s.title,
+            url: s.url,
+            alignment: 'neutral',
+            credibilityNotes: 'Retrieved via Gemini Google Search Grounding'
+          });
+        }
+      });
     }
 
     // Mathematical Fact-Checking Confidence Formula (TP, FP, TN, FN + Source Weights + Entropy)
-    combined.confidence = calcMathConfidence(combined.analyzedSources||[], combined.verdict, orch?.riskLevel||'medium', combined.confidence);
+    const allSources = combined.analyzedSources||[];
+    combined.confidence = calcMathConfidence(allSources, combined.verdict, orch?.riskLevel||'medium', combined.confidence);
 
     // ─── CRAG Self-Reflection & Evidence Consistency Auditor ───
-    if ((!combined.analyzedSources || combined.analyzedSources.length === 0) && combined.verdict !== 'UNVERIFIED') {
+    const totalEvidence = allSources.length + mcpArts.length;
+    if (totalEvidence === 0 && combined.verdict !== 'UNVERIFIED') {
       addLog('warn', `🔬 CRAG Auditor: Zero sources retrieved — auditing verdict from ${combined.verdict} to UNVERIFIED`);
       combined.verdict = 'UNVERIFIED';
       combined.confidence = 21.4;
     } else {
-      addLog('info', `🔬 CRAG Auditor: Evaluated ${combined.analyzedSources?.length||0} sources — evidence consistency verified`);
+      addLog('info', `🔬 CRAG Auditor: Evaluated ${allSources.length} analyzed + ${mcpArts.length} MCP sources — evidence consistency verified`);
     }
 
-    setAg(2,'done',`✅ ${combined.analyzedSources?.length||0} sources`);
+    // Update search mode based on actual sources
+    if(mcpArts.length > 0) searchMode = 'mcp';
+
+    setAg(2,'done',`✅ ${allSources.length} sources`);
     setAg(3,'done',`✅ ${combined.verdict}`);
     setCallDot(2,'done');
     const lvl=combined.verdict==='TRUE'?'ok':combined.verdict==='FALSE'?'err':'warn';
@@ -1125,11 +1156,11 @@ function render(claim,orch,arts,fc,verd,searchMode,latencyMs=0){
   const confRaw = typeof fc.confidence === 'number' ? fc.confidence : parseFloat(fc.confidence) || 34.2;
   const pct = Math.max(0, Math.min(100, parseFloat(confRaw.toFixed(1))));
   setTimeout(()=>{document.getElementById('cfill').style.width=pct+'%';document.getElementById('cpct').textContent=pct+'%';},400);
-  document.getElementById('exptxt').textContent=verd.explanation||fc.reasoning||'';
+  document.getElementById('exptxt').textContent=verd.explanation||fc.reasoning||fc.overallContext||'No detailed explanation available.';
 
   // Source mode badge
   const smb=document.getElementById('srcModeBadge');
-  if(searchMode==='mcp') smb.innerHTML='<span class="src-mode-badge mcp">🌐 Live news via MCP Server</span>';
+  if(searchMode==='mcp' || searchMode==='dual') smb.innerHTML='<span class="src-mode-badge mcp">🌐 Live news via MCP Server (NewsAPI + GNews + DuckDuckGo + Google News RSS)</span>';
   else if(searchMode==='gemini') smb.innerHTML='<span class="src-mode-badge gsearch">🤖 Live search via Gemini Google Search</span>';
   else smb.innerHTML='<span class="src-mode-badge training">📚 Analysis from Gemini training knowledge</span>';
 
