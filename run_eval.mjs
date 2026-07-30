@@ -113,19 +113,16 @@ function assessCorrectness(systemVerdict, groundTruth) {
   });
 
   const page = await browser.newPage();
-  const appPath = resolve(__dirname, 'public', 'index.html');
-  const appUrl = `file:///${appPath.replace(/\\/g, '/')}`;
+  const appUrl = CONFIG.mcp;
 
-  console.log(`🌐 Opening app: ${appUrl}`);
+  console.log(`🌐 Opening live app with multi-key rotation: ${appUrl}`);
   await page.goto(appUrl, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1000);
 
-  // Clear previous dataset & inject full configuration
+  // Clear previous dataset & ensure proxy routing
   await page.evaluate((cfg) => {
     localStorage.removeItem('nm:research:v1');
-    sessionStorage.setItem('gk', cfg.gk);
-    sessionStorage.setItem('nk', cfg.nk);
-    sessionStorage.setItem('gnk', cfg.gnk);
+    sessionStorage.setItem('gk', ''); // Force routing via Railway server proxy /api/gemini
     sessionStorage.setItem('mcp', cfg.mcp);
     updateMcpPill();
   }, CONFIG);
