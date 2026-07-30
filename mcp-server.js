@@ -263,10 +263,18 @@ app.post('/mcp/search', async (req, res) => {
   if (!query && !(Array.isArray(queries) && queries.length))
     return res.status(400).json({ success: false, error: 'Provide query or queries' });
   const terms = (Array.isArray(queries) && queries.length) ? queries.slice(0, 5) : [query];
-  console.log(`[search] Queries:`, terms);
+  
+  // Auto-generate sanitized fallback queries to handle typos & noise words (e.g. "cjp protest" -> "dharmendra pradhan resign")
+  const sanitizedTerms = [...terms];
+  terms.forEach(t => {
+    const clean = t.replace(/\b(due|to|the|a|an|in|on|at|for|by|cjp)\b/gi, '').replace(/\s+/g, ' ').trim();
+    if (clean && clean.length > 5 && !sanitizedTerms.includes(clean)) sanitizedTerms.push(clean);
+  });
+
+  console.log(`[search] Sanitized terms:`, sanitizedTerms);
   try {
     const all = [];
-    for (const q of terms) all.push(...await searchAll(q, maxResults));
+    for (const q of sanitizedTerms) all.push(...await searchAll(q, maxResults));
     const seen = new Set(), final = [];
     for (const a of all) { if (!a.url || seen.has(a.url)) continue; seen.add(a.url); final.push(a); }
     console.log(`[search] → ${final.length} articles`);
