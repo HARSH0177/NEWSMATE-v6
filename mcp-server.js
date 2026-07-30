@@ -154,31 +154,40 @@ async function fromDuckDuckGo(q, max) {
 // ─── Google News RSS feed search (free, live, no API key required) ───────────
 async function fromGoogleNewsRSS(q, max) {
   try {
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`;
-    const xml = await httpGetText(url);
+    const urls = [
+      `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-IN&gl=IN&ceid=IN:en`,
+      `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`
+    ];
+    const xmls = await Promise.all(urls.map(u => httpGetText(u).catch(() => '')));
     const results = [];
-    const items = xml.split('<item>');
-    for (let i = 1; i < items.length && results.length < max; i++) {
-      const item = items[i];
-      const titleMatch = item.match(/<title>([^<]+)<\/title>/);
-      const linkMatch = item.match(/<link>([^<]+)<\/link>/);
-      const pubMatch = item.match(/<pubDate>([^<]+)<\/pubDate>/);
-      const rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
-      const rawLink = linkMatch ? linkMatch[1].trim() : '';
-      if (rawTitle && rawLink) {
-        const parts = rawTitle.split(' - ');
-        const mainTitle = parts.length > 1 ? parts.slice(0, -1).join(' - ') : rawTitle;
-        const sourceName = parts.length > 1 ? parts[parts.length - 1] : 'Google News';
-        const isA = isAuth(sourceName) || isAuth(rawLink);
-        results.push({
-          title: mainTitle,
-          description: `Published: ${pubMatch ? pubMatch[1] : ''}`,
-          url: rawLink,
-          source: isA ? (srcName(sourceName) || srcName(rawLink) || sourceName) : sourceName,
-          provider: 'googlenews_rss',
-          publishedAt: pubMatch ? pubMatch[1] : '',
-          authorized: isA
-        });
+    const seenTitles = new Set();
+
+    for (const xml of xmls) {
+      if (!xml) continue;
+      const items = xml.split('<item>');
+      for (let i = 1; i < items.length && results.length < max; i++) {
+        const item = items[i];
+        const titleMatch = item.match(/<title>([^<]+)<\/title>/);
+        const linkMatch = item.match(/<link>([^<]+)<\/link>/);
+        const pubMatch = item.match(/<pubDate>([^<]+)<\/pubDate>/);
+        const rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
+        const rawLink = linkMatch ? linkMatch[1].trim() : '';
+        if (rawTitle && rawLink && !seenTitles.has(rawTitle.toLowerCase())) {
+          seenTitles.add(rawTitle.toLowerCase());
+          const parts = rawTitle.split(' - ');
+          const mainTitle = parts.length > 1 ? parts.slice(0, -1).join(' - ') : rawTitle;
+          const sourceName = parts.length > 1 ? parts[parts.length - 1] : 'Google News';
+          const isA = isAuth(sourceName) || isAuth(rawLink);
+          results.push({
+            title: mainTitle,
+            description: `Published: ${pubMatch ? pubMatch[1] : ''}`,
+            url: rawLink,
+            source: isA ? (srcName(sourceName) || srcName(rawLink) || sourceName) : sourceName,
+            provider: 'googlenews_rss',
+            publishedAt: pubMatch ? pubMatch[1] : '',
+            authorized: isA
+          });
+        }
       }
     }
     return results;
