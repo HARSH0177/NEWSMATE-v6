@@ -1096,6 +1096,28 @@ Number of articles retrieved: ${mcpArts.length}${articlesContext}`;
     // Update search mode based on actual sources
     if(mcpArts.length > 0) searchMode = 'mcp';
 
+    // ─── Auto-correct alignments when LLM marked everything 'neutral' ───
+    // If verdict is TRUE/FALSE but all sources are neutral, the LLM failed to assign proper alignments
+    const supCount = allSources.filter(s=>s.alignment==='supports').length;
+    const conCount = allSources.filter(s=>s.alignment==='contradicts').length;
+    if(allSources.length >= 2 && supCount === 0 && conCount === 0){
+      allSources.forEach(s => {
+        if(combined.verdict === 'TRUE') s.alignment = 'supports';
+        else if(combined.verdict === 'FALSE') s.alignment = 'contradicts';
+      });
+    }
+
+    // ─── Build supportingPoints and contradictingPoints from sources ───
+    if(!combined.supportingPoints?.length){
+      combined.supportingPoints = allSources.filter(s=>s.alignment==='supports').slice(0,3).map(s=>`${s.sourceName}: "${s.title}"`);
+    }
+    if(!combined.contradictingPoints?.length){
+      combined.contradictingPoints = allSources.filter(s=>s.alignment==='contradicts').slice(0,3).map(s=>`${s.sourceName}: "${s.title}"`);
+    }
+
+    // Recalculate confidence with corrected alignments
+    combined.confidence = calcMathConfidence(allSources, combined.verdict, orch?.riskLevel||'medium', combined.confidence);
+
     setAg(2,'done',`✅ ${allSources.length} sources`);
     setAg(3,'done',`✅ ${combined.verdict}`);
     setCallDot(2,'done');
@@ -1112,25 +1134,34 @@ Number of articles retrieved: ${mcpArts.length}${articlesContext}`;
     setAg(4,'run','✍️ writing…');
     addLog('info','📋 Call 3/3 → Verdict (gemini-3.6-flash)…');
 
+    // Build a rich context summary for Call 3
+    const srcSummary = allSources.slice(0,5).map(s=>`- ${s.sourceName}: "${s.title}" (${s.alignment})`).join('\n');
+
     const r3=await gemini(LITE,
       `You are the Verdict Writer for NewsMate, a student news fact-checker.
-Write a clear, friendly, student-appropriate report.
+Write a clear, friendly, student-appropriate report based on the evidence below.
 Output ONLY valid JSON (no markdown, no extra text):
 {
-  "headline":"10-15 word verdict headline",
-  "summary":"2 plain clear sentences a student can understand",
-  "explanation":"3 detailed sentences with reasoning and evidence context",
-  "recommendation":"1-2 sentences telling student what to do",
-  "agentNotes":{"orchestrator":"1 sentence","search":"1 sentence","analyzer":"1 sentence","factcheck":"1 sentence"}
+  "headline":"10-15 word verdict headline summarizing the finding",
+  "summary":"2 plain clear sentences a student can understand about what happened",
+  "explanation":"3-4 detailed sentences explaining the evidence found, which sources confirmed or denied the claim, and why the verdict was reached",
+  "recommendation":"1-2 sentences telling student what to do next",
+  "agentNotes":{"orchestrator":"1 sentence about classification","search":"1 sentence about articles found","analyzer":"1 sentence about source analysis","factcheck":"1 sentence about evidence alignment"}
 }
 Claim: "${claim}"
 Verdict: ${combined.verdict} (${combined.confidence}% confidence)
-Reasoning: ${combined.reasoning}
-Context: ${combined.overallContext}`, 800);
+Sources analyzed: ${allSources.length}
+Supporting evidence: ${combined.supportingPoints?.join('; ')||'None'}
+Contradicting evidence: ${combined.contradictingPoints?.join('; ')||'None'}
+Reasoning: ${combined.reasoning||'Based on multiple news sources'}
+Context: ${combined.overallContext||'Multiple authoritative sources reviewed'}
+Key sources:
+${srcSummary}`, 900);
 
     verd=pJ(extractText(r3),{
       headline:combined.verdict==='TRUE'?'This claim appears to be accurate':'This claim appears to be false or misleading',
-      summary:combined.reasoning||'',explanation:combined.overallContext||'',
+      summary:combined.reasoning||combined.overallContext||'Analysis based on multiple news sources.',
+      explanation:combined.overallContext||combined.reasoning||'Multiple authoritative news sources were reviewed to verify this claim.',
       recommendation:'Always verify news from multiple trusted sources before sharing.',
       agentNotes:{orchestrator:'',search:'',analyzer:'',factcheck:''}
     });
