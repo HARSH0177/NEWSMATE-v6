@@ -613,23 +613,16 @@ textarea#claim::placeholder{color:var(--muted);font-weight:400;font-style:italic
 
 <script>
 /* ════════════════════════════════════════════
-   ✅ CORRECT FREE MODELS (March 2026)
-   gemini-2.5-flash      → 10 RPM · 500 RPD
-   gemini-2.5-flash-lite → 15 RPM · 1000 RPD
-
-   ❌ THESE HAVE ZERO FREE QUOTA — DON'T USE:
-   gemini-2.5-pro, gemini-3.x-anything
-
-   NEWS SEARCH STRATEGY (fixes CORS errors):
-   • NewsAPI & GNews CANNOT be called from browser
-     — they block CORS. Only a server can call them.
+   ✅ ACTIVE FREE MODELS
+   gemini-3.6-flash      → 20 RPM · Free Tier Active
+════════════════════════════════════════════ */
    • If MCP server URL set → route all news through it ✅
    • If no MCP → use Gemini's built-in google_search tool
      (no CORS issues, uses Google's index natively) ✅
    • Never call NewsAPI/GNews directly from browser ❌
 ════════════════════════════════════════════ */
-const MAIN = 'gemini-2.5-flash';       // Calls 1 & 2
-const LITE = 'gemini-2.5-flash';        // Call 3 (supported active model)
+const MAIN = 'gemini-3.6-flash';       // Calls 1 & 2
+const LITE = 'gemini-3.6-flash';        // Call 3 (supported active model)
 
 /* sources */
 const SRCS=[
@@ -959,7 +952,7 @@ async function go(){
   try{
     /* ═══════════════════════════════
        CALL 1 — Orchestrator
-       Model: gemini-2.5-flash
+       Model: gemini-3.6-flash
     ═══════════════════════════════ */
     setCallDot(1,'active');
     setAg(0,'run','🤔 thinking…');
@@ -994,7 +987,7 @@ Claim: "${claim}"`, 400);
 
     /* ═══════════════════════════════
        CALL 2 — Analyze + Fact-check (Dual Multi-Source Fusion)
-       Model: gemini-2.5-flash
+       Model: gemini-3.6-flash
        • Fuses MCP live articles + Gemini Google Search Grounding together
     ═══════════════════════════════ */
     setCallDot(2,'active');
