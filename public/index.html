@@ -788,18 +788,19 @@ async function gemini(model, prompt, maxTok=800, tools=null, tries=3, responseSc
       }
     }
 
-    if((r.status===503||r.status===502) && model===LITE && i===0){
-      // Fallback: retry with MAIN model instead
-      addLog('warn',`⚠️ ${model} overloaded (${r.status}) — falling back to ${MAIN}…`);
-      return gemini(MAIN, prompt, maxTok, tools, tries);
-    }
-
-    if((r.status===503||r.status===502) && i<tries){
-      const wait=8*(i+1);
-      addLog('warn',`⏳ ${r.status} server overload on ${model} — waiting ${wait}s…`);
-      showRetry(wait);
-      await new Promise(res=>setTimeout(res,wait*1000));
-      continue;
+    if(r.status===502 || r.status===503){
+      if(tools){
+        addLog('warn',`⚠️ Google Search Grounding overloaded (${r.status}) — falling back instantly without web grounding…`);
+        return await gemini(model, prompt, maxTok, null, tries, responseSchema);
+      }
+      if(model !== 'gemini-2.5-flash'){
+        addLog('warn',`⚠️ ${model} overloaded (${r.status}) — falling back to gemini-2.5-flash…`);
+        return await gemini('gemini-2.5-flash', prompt, maxTok, null, tries, responseSchema);
+      }
+      if(i<tries){
+        await new Promise(res=>setTimeout(res, 2000));
+        continue;
+      }
     }
 
     throw new Error(`Gemini ${r.status}: ${msg}`);
