@@ -123,7 +123,7 @@ function assessCorrectness(systemVerdict, groundTruth) {
   // Clear previous dataset & inject full configuration
   await page.evaluate((cfg) => {
     localStorage.removeItem('nm:research:v1');
-    sessionStorage.setItem('gk', ''); // Empty key forces routing through Railway server proxy /api/gemini
+    sessionStorage.setItem('gk', cfg.gk);
     sessionStorage.setItem('nk', cfg.nk);
     sessionStorage.setItem('gnk', cfg.gnk);
     sessionStorage.setItem('mcp', cfg.mcp);
