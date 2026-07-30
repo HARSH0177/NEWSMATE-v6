@@ -987,13 +987,13 @@ Claim: "${claim}"`, 400);
 
     /* ═══════════════════════════════
        CALL 2 — Analyze + Fact-check (Dual Multi-Source Fusion)
-       Model: gemini-3.6-flash
+       Model: gemini-3.1-pro-preview (Pro Grounding Model)
        • Fuses MCP live articles + Gemini Google Search Grounding together
     ═══════════════════════════════ */
     setCallDot(2,'active');
     setAg(2,'run','📖 analyzing…');
     setAg(3,'run','⚖️ checking…');
-    addLog('info',`📊⚖️ Call 2/3 → Analyzing fused evidence from MCP Server + Gemini Google Search Grounding…`);
+    addLog('info',`📊⚖️ Call 2/3 → Analyzing fused evidence with Gemini 3.1 Pro Grounding + MCP Server…`);
 
     // Enable Google Search grounding tool for real-time live web cross-referencing
     const call2Tools = [{ google_search: {} }];
@@ -1028,7 +1028,7 @@ Output ONLY valid JSON (no markdown, no extra text):
 Claim: "${claim}"
 Type: ${orch.claimType} | Risk: ${orch.riskLevel}${articlesContext}`;
 
-    const r2 = await gemini(MAIN, prompt2, 1100, call2Tools);
+    const r2 = await gemini('gemini-3.1-pro-preview', prompt2, 1100, call2Tools);
     combined = pJ(extractText(r2), { analyzedSources: [], overallContext: '', verdict: 'UNVERIFIED', confidence: 34.2, supportingPoints: [], contradictingPoints: [], missingContext: '', reasoning: '' });
 
     // FUSE GROUNDING SOURCES WITH MCP SOURCES
