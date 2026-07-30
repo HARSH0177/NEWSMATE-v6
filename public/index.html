@@ -781,7 +781,7 @@ async function gemini(model, prompt, maxTok=800, tools=null, tries=3, responseSc
           addLog('warn',`⚡ Request timed out — falling back instantly to ${MAIN}…`);
           return await gemini(MAIN, prompt, maxTok, null, tries, responseSchema);
         }
-        throw new Error(`Request timed out after 8s. Check connection and try again.`);
+        throw new Error(`Request timed out after 25s. Check connection and try again.`);
       }
       throw new Error(`Network error: ${e.message}. Check your internet connection.`);
     }
@@ -1026,22 +1026,21 @@ Claim: "${claim}"`, 400);
     }
 
     const prompt2 = `You are two AI agents combined for NewsMate news fact-checker:
-1) Content Analyzer: assess the retrieved news articles below
-2) Fact Checker: cross-reference the claim against ALL retrieved evidence and core scientific/historical facts.
+1) Content Analyzer: assess the retrieved news articles below (if any)
+2) Fact Checker: cross-reference the claim against retrieved evidence AND established scientific, geographic, and historical facts.
 
 Instructions:
-- Carefully evaluate the claim "${claim}" against the retrieved news articles AND established scientific/historical ground truth.
-- If the claim is a known false myth, scientific impossibility, or debunked rumor (e.g., "vaccines cause autism", "sun revolves around earth", "bats are blind", "10% brain myth", "knuckles cause arthritis"), verdict MUST be "FALSE" or "MISLEADING".
-- If articles mention debunks, refutations, or disproofs of the claim, mark their alignment as "contradicts".
-- Mark articles as "supports" ONLY if they confirm the claim is true.
-- Mark articles as "contradicts" if they disprove, refute, or debunk the claim.
-- Mark articles as "neutral" if unrelated.
-- Output verdict as: "TRUE" (fully supported), "FALSE" (debunked/contradicted), "MISLEADING" (partially true/lacks context), or "UNVERIFIED" (no consensus).
+- Carefully evaluate the claim "${claim}".
+- If live news articles are provided below, assess them.
+- CRITICAL: If 0 news articles are retrieved OR the claim is a textbook scientific/historical/geographic fact (e.g., Mount Everest tallest mountain, 206 bones in human body, water boils at 100C, Apollo 11 moon landing, Pacific Ocean size, Great Barrier Reef), evaluate it using your verified internal knowledge base!
+- Do NOT return "UNVERIFIED" for well-established scientific facts, historical milestones, or geographic truths. Mark them as "TRUE" or "FALSE" with high confidence (>85%).
+- If the claim is a known false myth (e.g., "vaccines cause autism", "sun revolves around earth", "bats are blind", "10% brain myth", "knuckles cause arthritis"), verdict MUST be "FALSE" or "MISLEADING".
+- Output verdict as: "TRUE" (fully supported), "FALSE" (debunked/contradicted), "MISLEADING" (partially true/lacks context), or "UNVERIFIED" (no evidence/consensus).
 
 Output ONLY valid JSON (no markdown, no extra text):
 {
   "analyzedSources":[{"index":1,"sourceName":"...","title":"...","url":"...","alignment":"supports|contradicts|neutral","credibilityNotes":"one sentence"}],
-  "overallContext":"2 sentences summarising what all sources show",
+  "overallContext":"2 sentences summarising what all sources or scientific consensus show",
   "verdict":"TRUE|FALSE|MISLEADING|UNVERIFIED",
   "confidence": 87.5,
   "supportingPoints":["point1"],
@@ -1049,8 +1048,6 @@ Output ONLY valid JSON (no markdown, no extra text):
   "missingContext":"one sentence",
   "reasoning":"3 clear sentences explaining verdict"
 }
-
-IMPORTANT: You MUST populate analyzedSources with entries from the articles below. Do NOT return an empty array if articles are provided.
 
 Claim: "${claim}"
 Type: ${orch.claimType} | Risk: ${orch.riskLevel}
@@ -1096,10 +1093,15 @@ Number of articles retrieved: ${mcpArts.length}${articlesContext}`;
 
     // ─── CRAG Self-Reflection & Evidence Consistency Auditor ───
     const totalEvidence = allSources.length + mcpArts.length;
-    if (totalEvidence === 0 && combined.verdict !== 'UNVERIFIED') {
-      addLog('warn', `🔬 CRAG Auditor: Zero sources retrieved — auditing verdict from ${combined.verdict} to UNVERIFIED`);
-      combined.verdict = 'UNVERIFIED';
-      combined.confidence = 21.4;
+    if (totalEvidence === 0) {
+      if (combined.verdict !== 'UNVERIFIED' && combined.confidence >= 65) {
+        addLog('info', `📚 CRAG Auditor: 0 live news articles found — verified claim via Gemini Knowledge Base (${combined.verdict})`);
+        searchMode = 'training';
+      } else {
+        addLog('warn', `🔬 CRAG Auditor: Zero sources retrieved — auditing verdict from ${combined.verdict} to UNVERIFIED`);
+        combined.verdict = 'UNVERIFIED';
+        combined.confidence = 21.4;
+      }
     } else {
       addLog('info', `🔬 CRAG Auditor: Evaluated ${allSources.length} analyzed + ${mcpArts.length} MCP sources — evidence consistency verified`);
     }
