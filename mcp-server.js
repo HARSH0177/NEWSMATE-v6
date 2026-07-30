@@ -17,19 +17,15 @@ app.use(express.json({ limit: '10mb' })); // larger limit for image uploads
 // ─── Serve frontend ─────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── API Keys (Loaded from process.env / Railway Environment Variables) ──────
-const NEWS_API_KEY = process.env.NEWS_API_KEY || '9550ad0e2cba4aa9b654bf68694cea23';
-const GNEWS_API_KEY = process.env.GNEWS_API_KEY || 'bff953d35e1603c9e54aa91dc79dba70';
-const GEMINI_KEYS = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || 'AIzaSyAjEc1RDR57EDPyxF3dbawqsmVizsQiRD4')
+// ─── API Keys (Loaded strictly from Railway Environment Variables) ──────
+const NEWS_API_KEY = process.env.NEWS_API_KEY || '';
+const GNEWS_API_KEY = process.env.GNEWS_API_KEY || '';
+const GEMINI_KEYS = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '')
   .replace(/\\"/g, '')
   .replace(/["']/g, '')
   .split(',')
   .map(k => k.trim())
   .filter(k => k.startsWith('AIzaSy'));
-
-if (GEMINI_KEYS.length === 0) {
-  GEMINI_KEYS.push('AIzaSyAjEc1RDR57EDPyxF3dbawqsmVizsQiRD4');
-}
 
 let currentKeyIndex = 0;
 
