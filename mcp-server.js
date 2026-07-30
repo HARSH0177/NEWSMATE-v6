@@ -14,6 +14,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Accept'], credentials: false, maxAge: 86400 }));
 app.use(express.json({ limit: '10mb' })); // larger limit for image uploads
 
+// ─── Cache-busting for HTML (prevent stale code after deployments) ──────────
+app.use((req, res, next) => {
+  if(req.path === '/' || req.path.endsWith('.html')){
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+  }
+  next();
+});
+
 // ─── Serve frontend ─────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
