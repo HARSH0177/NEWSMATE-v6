@@ -729,12 +729,21 @@ function showRetry(secs){
   },200);
 }
 
+let globalKeyIndex = 0;
+function getRotatedKey(){
+  const rawKey = sessionStorage.getItem('gk') || localStorage.getItem('gk') || '';
+  if(!rawKey) return '';
+  const keys = rawKey.split(',').map(k=>k.trim()).filter(Boolean);
+  if(!keys.length) return '';
+  return keys[globalKeyIndex % keys.length];
+}
+
 /* ════════════════════════════════════════════
-   GEMINI API — with retry + model fallback
+   GEMINI API — with retry + multi-key rotation + model fallback
    503 on LITE → fall back to MAIN automatically
 ════════════════════════════════════════════ */
 async function gemini(model, prompt, maxTok=800, tools=null, tries=3, responseSchema=null){
-  const userKey=sessionStorage.getItem('gk')||localStorage.getItem('gk')||'';
+  const userKey = getRotatedKey();
   let m=MCP();
   m = m ? m.trim().replace(/\/+$/, '').replace(/\/mcp\/search$/i, '') : '';
 
@@ -783,6 +792,13 @@ async function gemini(model, prompt, maxTok=800, tools=null, tries=3, responseSc
     const msg=e?.error?.message||r.statusText;
 
     if(r.status===429){
+      globalKeyIndex++;
+      const rawKey = sessionStorage.getItem('gk') || localStorage.getItem('gk') || '';
+      const keys = rawKey.split(',').map(k=>k.trim()).filter(Boolean);
+      if(keys.length > 1){
+        addLog('warn',`⚡ 429 Rate limit — rotating to key ${globalKeyIndex % keys.length + 1} of ${keys.length}…`);
+        return await gemini(model, prompt, maxTok, tools, tries, responseSchema);
+      }
       if(model===MAIN){
         addLog('warn',`⚡ 429 Rate limit on ${MAIN} — falling back immediately to ${LITE}…`);
         return await gemini(LITE, prompt, maxTok, tools, tries);
