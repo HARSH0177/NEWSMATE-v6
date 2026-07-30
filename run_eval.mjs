@@ -137,10 +137,10 @@ function assessCorrectness(systemVerdict, groundTruth) {
   const skipped = [];
 
   console.log('════════════════════════════════════════════════════════════');
-  console.log('  STARTING 5-CLAIM MCP INTEGRATION TEST (CLAIMS 1 to 5)');
+  console.log('  STARTING FULL 40-CLAIM MCP BENCHMARK EVALUATION');
   console.log('════════════════════════════════════════════════════════════');
 
-  const testClaims = claims.slice(0, 5);
+  const testClaims = claims;
 
   for (let idx = 0; idx < testClaims.length; idx++) {
     const c = testClaims[idx];
@@ -310,12 +310,13 @@ function assessCorrectness(systemVerdict, groundTruth) {
   const csvOutput = await page.evaluate(() => {
     const RK = 'nm:research:v1';
     const recs = JSON.parse(localStorage.getItem(RK) || '[]');
-    const headers = ['ID','Timestamp','Claim','Category','TrueLabel','SystemVerdict','Confidence_pct','Correct','SearchMode','Latency_ms','ArticlesFound','Notes'];
+    const headers = ['ID','Timestamp','PromptVersion','ModelVersion','Claim','Category','TrueLabel','SystemVerdict','Confidence_pct','Correct','ErrorTaxonomy','SearchMode','Latency_ms','ArticlesFound','Notes'];
     const rows = recs.map(r => [
-      r.id, r.ts,
+      r.id, r.ts, 'v6.1.0-crag', 'gemini-2.5-flash',
       `"${(r.claim||'').replace(/"/g,'""')}"`,
       r.category, r.trueLabel, r.sysVerdict, r.confidence,
-      r.correct, r.searchMode, r.latencyMs||0, r.articlesFound||0,
+      r.correct, r.correct === 'yes' ? 'none' : (r.articlesFound === 0 ? 'retrieval_failure' : 'verdict_flip'),
+      r.searchMode, r.latencyMs||0, r.articlesFound||0,
       `"${(r.notes||'').replace(/"/g,'""')}"`
     ].join(','));
     return [headers.join(','), ...rows].join('\n');

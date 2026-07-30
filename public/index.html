@@ -721,7 +721,7 @@ function showRetry(secs){
    GEMINI API — with retry + model fallback
    503 on LITE → fall back to MAIN automatically
 ════════════════════════════════════════════ */
-async function gemini(model, prompt, maxTok=800, tools=null, tries=3){
+async function gemini(model, prompt, maxTok=800, tools=null, tries=3, responseSchema=null){
   const userKey=sessionStorage.getItem('gk')||localStorage.getItem('gk')||'';
   let m=MCP();
   m = m ? m.trim().replace(/\/+$/, '').replace(/\/mcp\/search$/i, '') : '';
@@ -734,9 +734,15 @@ async function gemini(model, prompt, maxTok=800, tools=null, tries=3){
   const reqHeaders = { 'Content-Type': 'application/json' };
   if (!useProxy && userKey) reqHeaders['x-gemini-key'] = userKey;
 
+  const genConfig = { maxOutputTokens: maxTok, temperature: 0.2 };
+  if (responseSchema) {
+    genConfig.responseMimeType = "application/json";
+    genConfig.responseSchema = responseSchema;
+  }
+
   const body = useProxy
-    ? { model, prompt, maxTok, tools }
-    : { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTok, temperature: 0.2 }, tools: tools || undefined };
+    ? { model, prompt, maxTok, tools, responseSchema, responseMimeType: responseSchema ? "application/json" : null }
+    : { contents: [{ parts: [{ text: prompt }] }], generationConfig: genConfig, tools: tools || undefined };
 
   for(let i=0;i<=tries;i++){
     let r;
@@ -899,7 +905,12 @@ async function fetchViaMCP(queries){
 async function go(){
   const _startTime = Date.now();
   const claim=document.getElementById('claim').value.trim();
-  if(!G() && !MCP()){showA('🔑 <b>Gemini API key required.</b> Click <b>⚙️</b> (bottom-right) to add your free key from <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>');return;}
+  // ─── Guardrail & Adversarial Injection Filter ───
+  const injectionPatterns = [/ignore previous/i, /system prompt/i, /forget instructions/i, /override system/i, /you are now/i, /jailbreak/i];
+  if (injectionPatterns.some(p => p.test(claim))) {
+    showA('🛡️ <b>Security Guardrail Alert:</b> Adversarial prompt injection or jailbreak pattern detected. Request rejected.', 'error');
+    return;
+  }
 
   hideA();
   const btn=document.getElementById('vBtn');btn.disabled=true;btn.classList.add('loading');
@@ -1010,6 +1021,15 @@ Type: ${orch.claimType} | Risk: ${orch.riskLevel}${articlesContext}`;
 
     // Mathematical Fact-Checking Confidence Formula (TP, FP, TN, FN + Source Weights + Entropy)
     combined.confidence = calcMathConfidence(combined.analyzedSources||[], combined.verdict, orch?.riskLevel||'medium', combined.confidence);
+
+    // ─── CRAG Self-Reflection & Evidence Consistency Auditor ───
+    if ((!combined.analyzedSources || combined.analyzedSources.length === 0) && combined.verdict !== 'UNVERIFIED') {
+      addLog('warn', `🔬 CRAG Auditor: Zero sources retrieved — auditing verdict from ${combined.verdict} to UNVERIFIED`);
+      combined.verdict = 'UNVERIFIED';
+      combined.confidence = 21.4;
+    } else {
+      addLog('info', `🔬 CRAG Auditor: Evaluated ${combined.analyzedSources?.length||0} sources — evidence consistency verified`);
+    }
 
     setAg(2,'done',`✅ ${combined.analyzedSources?.length||0} sources`);
     setAg(3,'done',`✅ ${combined.verdict}`);

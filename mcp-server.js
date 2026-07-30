@@ -221,11 +221,15 @@ app.get('/trending', async (_, res) => {
 });
 
 app.post('/api/gemini', async (req, res) => {
-  const { model = 'gemini-2.5-flash', prompt, maxTok = 800, tools = null } = req.body || {};
+  const { model = 'gemini-2.5-flash', prompt, maxTok = 800, tools = null, responseSchema = null, responseMimeType = null } = req.body || {};
   const customKey = req.headers['x-gemini-key'];
   const keysToTry = customKey ? [customKey] : GEMINI_KEYS;
 
-  const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTok, temperature: 0.2 } };
+  const genConfig = { maxOutputTokens: maxTok, temperature: 0.2 };
+  if (responseMimeType) genConfig.responseMimeType = responseMimeType;
+  if (responseSchema) genConfig.responseSchema = responseSchema;
+
+  const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: genConfig };
   if (tools) body.tools = tools;
 
   for (let attempt = 0; attempt < keysToTry.length; attempt++) {
