@@ -769,9 +769,9 @@ async function gemini(model, prompt, maxTok=800, tools=null, tries=3, responseSc
     catch(e){
       clearTimeout(timeoutId);
       if(e.name === 'AbortError'){
-        if(tools){
-          addLog('warn',`⚡ Search Grounding timed out (12s limit) — falling back instantly without web grounding…`);
-          return await gemini(model, prompt, maxTok, null, tries, responseSchema);
+        if(tools || model !== MAIN){
+          addLog('warn',`⚡ Request timed out — falling back instantly to ${MAIN}…`);
+          return await gemini(MAIN, prompt, maxTok, null, tries, responseSchema);
         }
         throw new Error(`Request timed out after 8s. Check connection and try again.`);
       }
@@ -1029,7 +1029,7 @@ Output ONLY valid JSON (no markdown, no extra text):
 Claim: "${claim}"
 Type: ${orch.claimType} | Risk: ${orch.riskLevel}${articlesContext}`;
 
-    const r2 = await gemini('gemini-3.1-pro-preview', prompt2, 1100, call2Tools);
+    const r2 = await gemini(MAIN, prompt2, 1100, call2Tools);
     combined = pJ(extractText(r2), { analyzedSources: [], overallContext: '', verdict: 'UNVERIFIED', confidence: 34.2, supportingPoints: [], contradictingPoints: [], missingContext: '', reasoning: '' });
 
     // FUSE GROUNDING SOURCES WITH MCP SOURCES
