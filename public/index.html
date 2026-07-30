@@ -1011,22 +1011,24 @@ Claim: "${claim}"`, 400);
 
     const prompt2 = `You are two AI agents combined for NewsMate news fact-checker:
 1) Content Analyzer: assess the retrieved news articles below
-2) Fact Checker: cross-reference the claim against ALL retrieved evidence
+2) Fact Checker: cross-reference the claim against ALL retrieved evidence and core scientific/historical facts.
 
 Instructions:
-- Carefully read ALL the retrieved news articles provided below.
-- For EACH relevant article, determine if it supports, contradicts, or is neutral to the claim.
-- Mark articles as "supports" if they confirm the claim, "contradicts" if they disprove it, "neutral" if unrelated.
-- Determine the overall verdict based on the weight of evidence.
-- CRITICAL: Calculate a PRECISE, DYNAMIC confidence percentage based on source count and agreement. More agreeing authoritative sources = higher confidence.
+- Carefully evaluate the claim "${claim}" against the retrieved news articles AND established scientific/historical ground truth.
+- If the claim is a known false myth, scientific impossibility, or debunked rumor (e.g., "vaccines cause autism", "sun revolves around earth", "bats are blind", "10% brain myth", "knuckles cause arthritis"), verdict MUST be "FALSE" or "MISLEADING".
+- If articles mention debunks, refutations, or disproofs of the claim, mark their alignment as "contradicts".
+- Mark articles as "supports" ONLY if they confirm the claim is true.
+- Mark articles as "contradicts" if they disprove, refute, or debunk the claim.
+- Mark articles as "neutral" if unrelated.
+- Output verdict as: "TRUE" (fully supported), "FALSE" (debunked/contradicted), "MISLEADING" (partially true/lacks context), or "UNVERIFIED" (no consensus).
 
-Output ONLY valid JSON (no markdown, no code fences, no extra text):
+Output ONLY valid JSON (no markdown, no extra text):
 {
   "analyzedSources":[{"index":1,"sourceName":"...","title":"...","url":"...","alignment":"supports|contradicts|neutral","credibilityNotes":"one sentence"}],
   "overallContext":"2 sentences summarising what all sources show",
   "verdict":"TRUE|FALSE|MISLEADING|UNVERIFIED",
   "confidence": 87.5,
-  "supportingPoints":["point1","point2"],
+  "supportingPoints":["point1"],
   "contradictingPoints":["point1"],
   "missingContext":"one sentence",
   "reasoning":"3 clear sentences explaining verdict"
@@ -1052,11 +1054,6 @@ Number of articles retrieved: ${mcpArts.length}${articlesContext}`;
         alignment: 'neutral',
         credibilityNotes: a.description||`Retrieved via ${a.provider||'MCP'}`
       }));
-      // If LLM gave a verdict but no sources, keep the verdict
-      if(combined.verdict === 'UNVERIFIED' && mcpArts.length >= 3){
-        combined.verdict = 'TRUE';
-        combined.confidence = 72.5;
-      }
     }
 
     // Also fuse any grounding sources if present
@@ -1095,13 +1092,13 @@ Number of articles retrieved: ${mcpArts.length}${articlesContext}`;
     if(mcpArts.length > 0) searchMode = 'mcp';
 
     // ─── Auto-correct alignments when LLM marked everything 'neutral' ───
-    // If verdict is TRUE/FALSE but all sources are neutral, the LLM failed to assign proper alignments
+    // If verdict is TRUE/FALSE/MISLEADING but all sources are neutral, align with verdict
     const supCount = allSources.filter(s=>s.alignment==='supports').length;
     const conCount = allSources.filter(s=>s.alignment==='contradicts').length;
     if(allSources.length >= 2 && supCount === 0 && conCount === 0){
       allSources.forEach(s => {
         if(combined.verdict === 'TRUE') s.alignment = 'supports';
-        else if(combined.verdict === 'FALSE') s.alignment = 'contradicts';
+        else if(combined.verdict === 'FALSE' || combined.verdict === 'MISLEADING') s.alignment = 'contradicts';
       });
     }
 
