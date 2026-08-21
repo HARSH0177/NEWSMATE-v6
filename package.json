@@ -1,20 +1,30 @@
 {
   "name": "newsmate-v6",
   "version": "6.0.0",
-  "description": "NewsMate V6 — Advanced AI Fake News Detector with multi-agent pipeline",
+  "description": "NewsMate — Production Multi-Agent AI Fact-Checking Engine using Corrective RAG (CRAG) & Gemini 1.5 Flash",
+  "main": "mcp-server.js",
   "scripts": {
-    "start": "node mcp-server.js"
+    "start": "node mcp-server.js",
+    "eval": "node eval/benchmark.mjs",
+    "test": "node --test test/unit.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "newsmate-mcp": "file:../newsmate-mcp",
-    "playwright": "^1.62.0",
-    "zod": "^3.22.0"
+    "playwright": "^1.42.0",
+    "zod": "^3.22.4"
   },
-  "main": "mcp-server.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "keywords": [
+    "fact-checking",
+    "crag",
+    "corrective-rag",
+    "multi-agent",
+    "gemini",
+    "playwright",
+    "mcp",
+    "misinformation-detection"
+  ],
+  "author": "Harsh Ambule",
+  "license": "MIT"
 }

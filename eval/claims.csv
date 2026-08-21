@@ -1,0 +1,41 @@
+id,claim,ground_truth_verdict,notes
+1,Mount Everest is the tallest mountain above sea level on Earth.,TRUE,Well-established geographic fact
+2,The human body contains 206 bones in adulthood.,TRUE,Standard anatomical fact
+3,Water boils at 100 degrees Celsius at standard sea-level atmospheric pressure.,TRUE,Basic physics fact
+4,NASA's Apollo 11 mission landed astronauts on the Moon in 1969.,TRUE,Well-documented historical event
+5,The Great Barrier Reef is the world's largest coral reef system.,TRUE,Well-established geographic fact
+6,India's total EV sales in 2025 reached approximately 2.3 million units per Vahan Portal data.,TRUE,Verified via IBEF/EVreporter Jan 2026 reporting
+7,The Pacific Ocean is the largest ocean on Earth by surface area.,TRUE,Basic geography fact
+8,DNA carries hereditary genetic information in nearly all living organisms.,TRUE,Basic biology fact
+9,The Great Wall of China is visible to the naked eye from the Moon.,FALSE,Well-documented myth; astronauts have confirmed it is not visible unaided
+10,Humans only use 10% of their brains.,FALSE,Debunked neuroscience myth; brain imaging shows most regions are active
+11,Lightning never strikes the same place twice.,FALSE,Empirically false; tall structures like the Empire State Building are struck repeatedly
+12,Goldfish have a memory span of only a few seconds.,FALSE,Debunked; studies show goldfish memory lasts weeks to months
+13,Vaccines cause autism.,FALSE,Thoroughly debunked; original study retracted for fraud
+14,Bats are completely blind.,FALSE,Most bat species have functional eyesight; echolocation supplements it
+15,The Sun revolves around the Earth.,FALSE,Basic astronomical fact; heliocentric model is established
+16,Napoleon Bonaparte was unusually short compared to his contemporaries.,FALSE,Myth from unit-conversion error; he was roughly average height for the era
+17,Cracking your knuckles causes arthritis.,MISLEADING,No causal evidence found in multiple studies; commonly believed but overstated
+18,MSG (monosodium glutamate) is dangerous to human health for the general population.,MISLEADING,Considered safe by major food safety bodies for most people; a small sensitive subset may react
+19,Organic food is always more nutritious than conventionally grown food.,MISLEADING,Organic mainly concerns pesticide/farming method; nutritional superiority is not well supported
+20,Cell phones cause brain cancer.,MISLEADING,No strong causal evidence; WHO classifies RF radiation as only 'possibly carcinogenic'
+21,Eating carrots gives you significantly better night vision than a normal healthy person.,MISLEADING,WWII-era propaganda myth; carrots support baseline eye health but do not enhance vision beyond normal
+22,The 1929 stock market crash was the sole cause of the Great Depression.,MISLEADING,Crash was a major trigger but economists cite multiple contributing structural factors
+23,You must drink exactly eight glasses of water a day for good health.,MISLEADING,No strong scientific basis for a fixed universal number; hydration needs vary by person
+24,Antibiotics are an effective treatment for the common cold.,MISLEADING,Colds are viral; antibiotics only treat bacterial infections and are commonly misapplied here
+25,India's electric two-wheelers made up more than half of the country's total EV sales in 2025.,PARTLY TRUE,"Correct in aggregate (~56-58%) per EVreporter, though the exact percentage varies slightly by data source and month"
+26,Tata Motors was the top-selling electric four-wheeler brand in India during 2025.,PARTLY TRUE,True for much of 2025 per EVreporter data, though exact market share figures shifted month to month
+27,Uttar Pradesh was the top state for EV sales in India in 2025.,PARTLY TRUE,True per one EVreporter report citing UP's e3W-driven volume, though other reports emphasize different states for specific segments
+28,The Bhartiya Antariksh Hackathon 2026 focused exclusively on satellite communication systems.,PARTLY TRUE,The hackathon covered multiple problem statements across ISRO domains; communications was one track among several including imagery processing
+29,Renewable energy now accounts for the majority of India's total installed power capacity.,PARTLY TRUE,True for installed capacity in some recent reporting periods but not for actual electricity generation share which remains lower
+30,Electric vehicle charging stations in India have increased significantly since 2023.,PARTLY TRUE,Directionally accurate and widely reported, though specific state-level counts vary by source and date
+31,A newly discovered exoplanet was confirmed this month to have detectable signs of alien life.,UNVERIFIED,No credible peer-reviewed or major scientific body confirmation found at time of labeling
+32,A major undisclosed data breach affecting a leading Indian fintech company was reported today.,UNVERIFIED,No corroborating report found from established outlets at time of labeling
+33,A new state government policy banning all diesel vehicles will take effect next month.,UNVERIFIED,No official government notification found corroborating this specific claim
+34,An anonymous internal memo reveals a major tech company is planning mass layoffs next quarter.,UNVERIFIED,Unsourced/anonymous claim with no corroborating reporting found
+35,A viral social media post claims a common household chemical combination cures a serious illness.,UNVERIFIED,No credible medical or scientific source found supporting this specific claim
+36,A local city council approved a controversial new zoning law last week according to a single social media account.,UNVERIFIED,Single unverified source; no official council record or news coverage found
+37,An unverified report claims a well-known startup secretly achieved profitability years ahead of public statements.,UNVERIFIED,No independent financial disclosure or credible reporting found to confirm
+38,A rumor claims a popular messaging app will start charging a mandatory monthly fee worldwide next year.,UNVERIFIED,No official company announcement found corroborating this claim
+39,An unconfirmed report states a specific celebrity was involved in a private altercation this week.,UNVERIFIED,No credible news source corroboration found at time of labeling
+40,A claim circulating online states a specific vaccine batch was recalled globally this week.,UNVERIFIED,No official regulatory recall notice found corroborating this specific claim

@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgG2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#F1F5F9"/>
+    </linearGradient>
+    <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="evalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="fShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="520" fill="url(#bgG2)"/>
+
+  <!-- Title -->
+  <g transform="translate(480, 42)" text-anchor="middle">
+    <rect x="-210" y="-16" width="420" height="32" rx="16" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.2"/>
+    <text y="5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#1D4ED8" letter-spacing="0.5">
+      CORRECTIVE RAG (CRAG) VERIFICATION STATE MACHINE
+    </text>
+  </g>
+
+  <!-- Flow Steps -->
+  <!-- Step 1: Input Claim -->
+  <g transform="translate(60, 100)">
+    <rect width="180" height="90" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#fShadow)"/>
+    <rect width="180" height="4" rx="2" fill="#3B82F6"/>
+    <text x="16" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10.5" font-weight="700" fill="#2563EB">STEP 1: INGESTION</text>
+    <text x="16" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800" fill="#0F172A">Raw User Claim</text>
+    <text x="16" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="500" fill="#64748B">Regex sanitation &amp; classification</text>
+  </g>
+
+  <!-- Arrow 1 to 2 -->
+  <path d="M 240 145 L 280 145 M 274 140 L 280 145 L 274 150" stroke="#94A3B8" stroke-width="2" fill="none"/>
+
+  <!-- Step 2: Orchestration & Search Formulation -->
+  <g transform="translate(280, 100)">
+    <rect width="200" height="90" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#fShadow)"/>
+    <rect width="200" height="4" rx="2" fill="#8B5CF6"/>
+    <text x="16" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10.5" font-weight="700" fill="#7C3AED">STEP 2: ORCHESTRATION</text>
+    <text x="16" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800" fill="#0F172A">Query Formulation</text>
+    <text x="16" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="500" fill="#64748B">Gemini 1.5 Flash query planner</text>
+  </g>
+
+  <!-- Arrow 2 to 3 -->
+  <path d="M 480 145 L 520 145 M 514 140 L 520 145 L 514 150" stroke="#94A3B8" stroke-width="2" fill="none"/>
+
+  <!-- Step 3: MCP Multi-Source Web Scraper -->
+  <g transform="translate(520, 100)">
+    <rect width="200" height="90" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#fShadow)"/>
+    <rect width="200" height="4" rx="2" fill="#10B981"/>
+    <text x="16" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10.5" font-weight="700" fill="#059669">STEP 3: WEB SCRAPER</text>
+    <text x="16" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800" fill="#0F172A">Multi-Source MCP</text>
+    <text x="16" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="500" fill="#64748B">Playwright + 19 Whitelisted Outlets</text>
+  </g>
+
+  <!-- Arrow 3 to Decision Diamond -->
+  <path d="M 720 145 L 760 145 L 760 230 M 755 224 L 760 230 L 765 224" stroke="#94A3B8" stroke-width="2" fill="none"/>
+
+  <!-- ═════════ STEP 4: CRAG CONFIDENCE EVALUATOR (CENTRAL DIAMOND/BOX) ═════════ -->
+  <g transform="translate(430, 240)">
+    <rect x="-160" width="320" height="110" rx="12" fill="#FFFFFF" stroke="#F59E0B" stroke-width="1.8" filter="url(#fShadow)"/>
+    <rect x="-160" width="320" height="5" rx="2" fill="url(#evalGrad)"/>
+    <text x="0" y="30" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="800" fill="#D97706" letter-spacing="0.5">
+      STEP 4: CRAG EVIDENCE CONFIDENCE CHECK
+    </text>
+    <text x="0" y="55" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="#0F172A">
+      Score &gt;= 0.70 &amp; Sources &gt;= 2 ?
+    </text>
+    <text x="0" y="80" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10.5" font-weight="500" fill="#475569">
+      Validates domain authority, sentiment alignment, and entity relevance
+    </text>
+  </g>
+
+  <!-- Path YES: High Confidence -->
+  <path d="M 270 295 L 180 295 L 180 390 M 175 384 L 180 390 L 185 384" stroke="#10B981" stroke-width="2" fill="none"/>
+  <rect x="195" y="278" width="60" height="20" rx="4" fill="#D1FAE5"/>
+  <text x="225" y="292" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="700" fill="#065F46">PASS [YES]</text>
+
+  <!-- Path NO: Low Confidence / 0 Sources -->
+  <path d="M 590 295 L 750 295 L 750 390 M 745 384 L 750 390 L 755 384" stroke="#DC2626" stroke-width="2" fill="none"/>
+  <rect x="610" y="278" width="115" height="20" rx="4" fill="#FEE2E2"/>
+  <text x="667" y="292" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="700" fill="#991B1B">FAIL / 0 SOURCES</text>
+
+  <!-- Branch A: Live News Consensus Grounding -->
+  <g transform="translate(60, 390)">
+    <rect width="240" height="95" rx="10" fill="#FFFFFF" stroke="#A7F3D0" stroke-width="1.5" filter="url(#fShadow)"/>
+    <rect width="240" height="4" rx="2" fill="#10B981"/>
+    <text x="14" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="700" fill="#059669">BRANCH A: LIVE GROUNDING</text>
+    <text x="14" y="44" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12.5" font-weight="800" fill="#0F172A">Multi-Source Consensus</text>
+    <text x="14" y="62" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="500" fill="#475569">Aggregates supporting &amp; counter-points</text>
+    <text x="14" y="78" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="9" font-weight="600" fill="#059669">Dynamic Alignment Weighting</text>
+  </g>
+
+  <!-- Branch B: Corrective Fallback -->
+  <g transform="translate(630, 390)">
+    <rect width="240" height="95" rx="10" fill="#FFFFFF" stroke="#FCA5A5" stroke-width="1.5" filter="url(#fShadow)"/>
+    <rect width="240" height="4" rx="2" fill="#EF4444"/>
+    <text x="14" y="24" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="700" fill="#DC2626">BRANCH B: CORRECTIVE RAG</text>
+    <text x="14" y="44" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12.5" font-weight="800" fill="#0F172A">Textbook &amp; Knowledge Fallback</text>
+    <text x="14" y="62" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" font-weight="500" fill="#475569">Verified scientific &amp; historical ground truth</text>
+    <text x="14" y="78" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="9" font-weight="600" fill="#DC2626">Eliminates 0-source False Unverifieds</text>
+  </g>
+
+  <!-- Final Synthesis & Output Box -->
+  <g transform="translate(350, 400)">
+    <rect width="230" height="85" rx="10" fill="#EFF6FF" stroke="#3B82F6" stroke-width="1.5" filter="url(#fShadow)"/>
+    <text x="115" y="26" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10.5" font-weight="700" fill="#1D4ED8">FINAL AUDIT &amp; REPORT</text>
+    <text x="115" y="48" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" font-weight="800" fill="#0F172A">Consensus Verdict</text>
+    <text x="115" y="68" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="9.5" font-weight="600" fill="#2563EB">TRUE • FALSE • MISLEADING • UNVERIFIED</text>
+  </g>
+
+  <!-- Convergence Arrows -->
+  <path d="M 300 440 L 350 440 M 344 435 L 350 440 L 344 445" stroke="#3B82F6" stroke-width="1.8" fill="none"/>
+  <path d="M 630 440 L 580 440 M 586 435 L 580 440 L 586 445" stroke="#3B82F6" stroke-width="1.8" fill="none"/>
+</svg>

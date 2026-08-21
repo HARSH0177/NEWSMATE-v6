@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgG3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#EFF6FF"/>
+    </linearGradient>
+    <linearGradient id="greenBar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+    <linearGradient id="blueBar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="purpleBar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="amberBar" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="bShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="960" height="480" fill="url(#bgG3)"/>
+
+  <!-- Header Block -->
+  <g transform="translate(480, 40)" text-anchor="middle">
+    <rect x="-240" y="-16" width="480" height="32" rx="16" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2" filter="url(#bShadow)"/>
+    <text y="5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#0F172A" letter-spacing="0.5">
+      40-CLAIM MULTI-DOMAIN EMPIRICAL BENCHMARK
+    </text>
+  </g>
+
+  <!-- Left Column: High-Level Scorecards -->
+  <g transform="translate(50, 85)">
+    <!-- Scorecard 1: Factual Accuracy -->
+    <rect width="380" height="110" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2" filter="url(#bShadow)"/>
+    <rect width="6" height="110" rx="3" fill="url(#greenBar)"/>
+    <text x="24" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="700" fill="#059669" letter-spacing="0.5">FACTUAL BENCHMARK PRECISION</text>
+    <text x="24" y="72" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="800" fill="#0F172A">100%</text>
+    <text x="145" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="600" fill="#64748B">(16/16 exact match)</text>
+    <text x="24" y="94" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="500" fill="#475569">Established physics, biology, history &amp; myths</text>
+
+    <!-- Scorecard 2: Overall Weighted Accuracy -->
+    <g transform="translate(0, 130)">
+      <rect width="380" height="110" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2" filter="url(#bShadow)"/>
+      <rect width="6" height="110" rx="3" fill="url(#blueBar)"/>
+      <text x="24" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="700" fill="#2563EB" letter-spacing="0.5">WEIGHTED MULTI-DOMAIN ACCURACY</text>
+      <text x="24" y="72" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="34" font-weight="800" fill="#0F172A">62.5%</text>
+      <text x="155" y="70" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#64748B">(23 Full • 4 Partial • 13 Disputed)</text>
+      <text x="24" y="94" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="500" fill="#475569">Strict penalties on nuance &amp; emerging rumors</text>
+    </g>
+
+    <!-- Scorecard 3: Latency & Reliability -->
+    <g transform="translate(0, 260)">
+      <rect width="380" height="100" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2" filter="url(#bShadow)"/>
+      <rect width="6" height="100" rx="3" fill="url(#amberBar)"/>
+      <text x="24" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="700" fill="#D97706" letter-spacing="0.5">PIPELINE LATENCY &amp; RESILIENCE</text>
+      <text x="24" y="64" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="800" fill="#0F172A">~9.8s</text>
+      <text x="115" y="62" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="600" fill="#64748B">mean latency</text>
+      <text x="24" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="600" fill="#059669">0% Rate-Limit Downtime (40/40 completed)</text>
+    </g>
+  </g>
+
+  <!-- Right Column: Domain Accuracy Breakdown Bars -->
+  <g transform="translate(470, 85)">
+    <rect width="440" height="370" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2" filter="url(#bShadow)"/>
+    <text x="24" y="36" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="800" fill="#0F172A">
+      DOMAIN BREAKDOWN &amp; CATEGORY PERFORMANCE
+    </text>
+    <text x="24" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="500" fill="#64748B">
+      Performance across 40 claims spanning scientific, health, news, &amp; rumors:
+    </text>
+
+    <!-- Bar 1: Scientific Facts & Geography (16 Claims) -->
+    <g transform="translate(24, 75)">
+      <text x="0" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="700" fill="#1E293B">Scientific Facts &amp; Historical Grounding (16 Claims)</text>
+      <text x="390" y="16" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="800" fill="#059669">100%</text>
+      <!-- Track -->
+      <rect y="24" width="390" height="14" rx="7" fill="#F1F5F9"/>
+      <!-- Fill -->
+      <rect y="24" width="390" height="14" rx="7" fill="url(#greenBar)"/>
+    </g>
+
+    <!-- Bar 2: Health & Medical (8 Claims) -->
+    <g transform="translate(24, 140)">
+      <text x="0" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="700" fill="#1E293B">Medical &amp; Health Misleading Claims (8 Claims)</text>
+      <text x="390" y="16" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="800" fill="#2563EB">75.0%</text>
+      <!-- Track -->
+      <rect y="24" width="390" height="14" rx="7" fill="#F1F5F9"/>
+      <!-- Fill (75% of 390 = 292.5) -->
+      <rect y="24" width="292" height="14" rx="7" fill="url(#blueBar)"/>
+    </g>
+
+    <!-- Bar 3: Indian News & EV Sector (7 Claims) -->
+    <g transform="translate(24, 205)">
+      <text x="0" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="700" fill="#1E293B">Indian News &amp; EV Industry Sector (7 Claims)</text>
+      <text x="390" y="16" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="800" fill="#7C3AED">71.4%</text>
+      <!-- Track -->
+      <rect y="24" width="390" height="14" rx="7" fill="#F1F5F9"/>
+      <!-- Fill (71.4% of 390 = 278) -->
+      <rect y="24" width="278" height="14" rx="7" fill="url(#purpleBar)"/>
+    </g>
+
+    <!-- Bar 4: Unverified & Breaking Rumors (9 Claims) -->
+    <g transform="translate(24, 270)">
+      <text x="0" y="16" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="700" fill="#1E293B">Unverified Emerging Rumors (9 Claims)</text>
+      <text x="390" y="16" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11.5" font-weight="800" fill="#D97706">77.8%</text>
+      <!-- Track -->
+      <rect y="24" width="390" height="14" rx="7" fill="#F1F5F9"/>
+      <!-- Fill (77.8% of 390 = 303) -->
+      <rect y="24" width="303" height="14" rx="7" fill="url(#amberBar)"/>
+    </g>
+
+    <!-- Footer Note -->
+    <g transform="translate(24, 340)">
+      <text x="0" y="10" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10.5" font-weight="500" fill="#64748B">
+        Evaluated using atomic per-claim persistence in <tspan font-family="monospace">eval_state.json</tspan>
+      </text>
+    </g>
+  </g>
+</svg>
