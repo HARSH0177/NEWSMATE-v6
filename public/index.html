@@ -1001,9 +1001,13 @@ async function go(){
 
     const r1=await gemini(MAIN,
       `You are the Orchestrator AI for NewsMate, a news fact-checker.
-Analyse the claim and output ONLY valid JSON (no markdown, no extra text):
-{"queries":["query1","query2","query3"],"claimType":"factual|scientific|political|historical|health","riskLevel":"low|medium|high","notes":"brief note"}
-Claim: "${claim}"`, 400);
+Analyse the claim: "${claim}"
+Generate 3 concise, highly effective search queries (2-4 keywords each) for Google News / DuckDuckGo:
+- Strip conversational words (e.g. "tell me about", "what is", "did")
+- Correct any likely typos or misspellings in people's names or locations (e.g. "Mathew vandakye" -> "Matthew VanDyke")
+- Target the core real-world event or fact.
+Output ONLY valid JSON (no markdown, no extra text):
+{"queries":["query1","query2","query3"],"claimType":"factual|scientific|political|historical|health","riskLevel":"low|medium|high","notes":"brief note"}`, 400);
 
     orch=pJ(extractText(r1),{queries:[claim,`fact check ${claim}`,`${claim} latest`],claimType:'factual',riskLevel:'medium',notes:''});
     setAg(0,'done','✅ done');

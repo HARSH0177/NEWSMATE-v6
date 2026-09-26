@@ -68,7 +68,7 @@ function httpGet(url) {
         catch (e) { reject(new Error('JSON parse failed')); }
       });
     });
-    req.setTimeout(10000, () => { req.destroy(); reject(new Error('Timeout')); });
+    req.setTimeout(4500, () => { req.destroy(); reject(new Error('Timeout')); });
     req.on('error', e => reject(new Error(e.message)));
   });
 }
@@ -87,7 +87,7 @@ function httpGetText(url) {
       res.on('data', c => body += c);
       res.on('end', () => resolve(body));
     });
-    req.setTimeout(10000, () => { req.destroy(); reject(new Error('Timeout')); });
+    req.setTimeout(4500, () => { req.destroy(); reject(new Error('Timeout')); });
     req.on('error', e => reject(new Error(e.message)));
   });
 }
@@ -339,7 +339,13 @@ app.post('/mcp/search', async (req, res) => {
   console.log(`[search] Sanitized terms:`, sanitizedTerms);
   try {
     const all = [];
-    for (const q of sanitizedTerms) all.push(...await searchAll(q, maxResults));
+    const termBatches = await Promise.all(
+      sanitizedTerms.slice(0, 4).map(q => searchAll(q, maxResults).catch(e => {
+        console.error(`[search] Error for "${q}":`, e.message);
+        return [];
+      }))
+    );
+    for (const batch of termBatches) all.push(...batch);
     const seen = new Set(), final = [];
     for (const a of all) { if (!a.url || seen.has(a.url)) continue; seen.add(a.url); final.push(a); }
     console.log(`[search] → ${final.length} articles`);
