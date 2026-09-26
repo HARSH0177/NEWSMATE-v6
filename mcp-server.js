@@ -286,6 +286,12 @@ app.post('/api/gemini', async (req, res) => {
   const customKey = req.headers['x-gemini-key'];
   const keysToTry = customKey ? [customKey] : GEMINI_KEYS;
 
+  if (!keysToTry.length) {
+    return res.status(400).json({
+      error: { message: 'No Gemini API key found on server. Please set GEMINI_API_KEY in Render Environment Variables or enter your Gemini key in Settings (⚙️).' }
+    });
+  }
+
   const genConfig = { maxOutputTokens: maxTok, temperature: 0.2 };
   if (responseMimeType) genConfig.responseMimeType = responseMimeType;
   if (responseSchema) genConfig.responseSchema = responseSchema;

@@ -353,20 +353,20 @@ textarea#claim::placeholder{color:var(--muted);font-weight:400;font-style:italic
 
   <div class="cors-box">
     ✅ <strong>Live Recruiter Demo Mode Active:</strong><br>
-    Your live Railway MCP server (NewsAPI + GNews + DuckDuckGo) and Gemini API key are <strong>pre-configured out-of-the-box</strong>.<br>
-    👉 Recruiters can click any sample claim or type a custom claim and hit <strong>VERIFY</strong> immediately — no setup required!
+    Your live MCP server (NewsAPI + GNews + DuckDuckGo) and Gemini API key can be <strong>pre-configured via server environment variables</strong> or entered below.<br>
+    👉 Recruiters can click any sample claim or type a custom claim and hit <strong>VERIFY</strong> immediately!
   </div>
 
   <div class="fg">
     <div class="field">
-      <label>🔑 Gemini API Key <span style="color:var(--green);font-size:10px;">(Pre-configured & Active)</span></label>
-      <input type="password" id="gk" placeholder="AIza... (Pre-configured)" autocomplete="off">
+      <label>🔑 Gemini API Key <span style="color:var(--green);font-size:10px;">(Optional if set on server)</span></label>
+      <input type="password" id="gk" placeholder="AIza... (or leave empty if GEMINI_API_KEY set on server)" autocomplete="off">
       <div class="hint">Override if using a custom key from <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></div>
     </div>
     <div class="field">
-      <label>🖥️ MCP Server URL <span style="color:var(--green);font-size:10px;">⭐ Live Railway Server</span></label>
-      <input type="text" id="mcp" placeholder="https://newsmate-v6-production-bde0.up.railway.app" autocomplete="off">
-      <div class="hint">Pre-configured Railway MCP server with NewsAPI + GNews + DuckDuckGo</div>
+      <label>🖥️ MCP Server URL <span style="color:var(--green);font-size:10px;">⭐ Live Server</span></label>
+      <input type="text" id="mcp" placeholder="Leave empty for current domain origin" autocomplete="off">
+      <div class="hint">Defaults to current domain origin (auto-connects to this deployment)</div>
     </div>
   </div>
 
@@ -644,7 +644,16 @@ document.getElementById('sfc').innerHTML=SRCS.map((s,i)=>`<span class="sfch">${E
 let sessionCalls=0;
 function openM(){
   const gkEl=document.getElementById('gk');if(gkEl)gkEl.value=sessionStorage.getItem('gk')||localStorage.getItem('gk')||DEFAULT_GK;
-  const mcpEl=document.getElementById('mcp');if(mcpEl)mcpEl.value=sessionStorage.getItem('mcp')||localStorage.getItem('mcp')||DEFAULT_MCP;
+  const mcpEl=document.getElementById('mcp');
+  if(mcpEl){
+    let storedMcp = sessionStorage.getItem('mcp')||localStorage.getItem('mcp')||'';
+    if(storedMcp.includes('railway.app')) {
+      sessionStorage.removeItem('mcp');
+      localStorage.removeItem('mcp');
+      storedMcp = '';
+    }
+    mcpEl.value = storedMcp;
+  }
   document.getElementById('mbg').classList.add('open');
   updateMcpPill();
 }
@@ -657,9 +666,17 @@ function saveS(){
   setTimeout(()=>{ok.textContent='';closeM();},1100);
 }
 const DEFAULT_GK = '';
-const DEFAULT_MCP = 'https://newsmate-v6-production-bde0.up.railway.app';
+const DEFAULT_MCP = (typeof window !== 'undefined' && window.location.origin && !window.location.origin.startsWith('file://')) ? window.location.origin : '';
 const G=()=>sessionStorage.getItem('gk')||localStorage.getItem('gk')||DEFAULT_GK;
-const MCP=()=>sessionStorage.getItem('mcp')||localStorage.getItem('mcp')||DEFAULT_MCP;
+const MCP=()=>{
+  let val = sessionStorage.getItem('mcp') || localStorage.getItem('mcp') || DEFAULT_MCP;
+  if (val && val.includes('railway.app')) {
+    sessionStorage.removeItem('mcp');
+    localStorage.removeItem('mcp');
+    val = DEFAULT_MCP;
+  }
+  return val;
+};
 
 function updateMcpPill(){
   const pill=document.getElementById('mcpStatusPill');
