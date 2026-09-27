@@ -1000,12 +1000,14 @@ async function go(){
     addLog('info','🎯 Call 1/3 → Orchestrator (gemini-3.6-flash)…');
 
     const r1=await gemini(MAIN,
-      `You are the Orchestrator AI for NewsMate, a news fact-checker.
-Analyse the claim: "${claim}"
-Generate 3 concise, highly effective search queries (2-4 keywords each) for Google News / DuckDuckGo:
-- Strip conversational words (e.g. "tell me about", "what is", "did")
-- Correct any likely typos or misspellings in people's names or locations (e.g. "Mathew vandakye" -> "Matthew VanDyke")
-- Target the core real-world event or fact.
+      `You are the Orchestrator AI for NewsMate, an automated multi-source news fact-checking system.
+Analyze the user's input claim: "${claim}"
+
+Generate 3 distinct, concise search queries (2-4 keywords each) optimized for news search engines (Google News, DuckDuckGo, NewsAPI):
+1. Query 1 (Direct Subject): Core named entities, subjects, and primary action, stripping conversational filler (e.g. "tell me about", "is it true that", "can you verify", "did").
+2. Query 2 (Entity & Typo Correction): Correct any phonetic misspellings or typos in names of people, companies, countries, institutions, or laws to their canonical forms.
+3. Query 3 (Contextual Fact-Check): Search the broader event, institution, or controversy with keywords like "news", "official", "report", or "court".
+
 Output ONLY valid JSON (no markdown, no extra text):
 {"queries":["query1","query2","query3"],"claimType":"factual|scientific|political|historical|health","riskLevel":"low|medium|high","notes":"brief note"}`, 400);
 

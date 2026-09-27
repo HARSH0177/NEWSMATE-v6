@@ -323,18 +323,30 @@ app.post('/api/gemini', async (req, res) => {
   }
 });
 
+function sanitizeQuery(q) {
+  if (!q || typeof q !== 'string') return '';
+  return q
+    .replace(/[?!,."';:()[\]{}]/g, ' ')
+    .replace(/\b(tell|me|about|can|you|verify|if|whether|is|it|true|that|what|happened|with|to|did|does|breaking|news|latest|on|in|at|for|by|due|the|a|an)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 app.post('/mcp/search', async (req, res) => {
   const { query, queries, maxResults = 10 } = req.body || {};
   if (!query && !(Array.isArray(queries) && queries.length))
     return res.status(400).json({ success: false, error: 'Provide query or queries' });
   const terms = (Array.isArray(queries) && queries.length) ? queries.slice(0, 5) : [query];
   
-  // Auto-generate sanitized fallback queries to handle typos & noise words (e.g. "cjp protest" -> "dharmendra pradhan resign")
-  const sanitizedTerms = [...terms];
-  terms.forEach(t => {
-    const clean = t.replace(/\b(due|to|the|a|an|in|on|at|for|by|cjp)\b/gi, '').replace(/\s+/g, ' ').trim();
-    if (clean && clean.length > 5 && !sanitizedTerms.includes(clean)) sanitizedTerms.push(clean);
-  });
+  // Universal multi-query expansion: keeps exact term + stripped key entities
+  const sanitizedTerms = [];
+  for (const t of terms) {
+    if (!t) continue;
+    const cleanT = t.trim();
+    if (cleanT && !sanitizedTerms.includes(cleanT)) sanitizedTerms.push(cleanT);
+    const stripped = sanitizeQuery(cleanT);
+    if (stripped && stripped.length > 3 && !sanitizedTerms.includes(stripped)) sanitizedTerms.push(stripped);
+  }
 
   console.log(`[search] Sanitized terms:`, sanitizedTerms);
   try {
