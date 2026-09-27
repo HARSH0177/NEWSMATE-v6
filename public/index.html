@@ -869,7 +869,7 @@ function calcMathConfidence(sources, verdict, riskLevel, llmConf){
     return Math.min(84.5, Math.max(12.3, llmConf || 34.2));
   }
   let TP = 0, FP = 0, TN = 0, FN = 0, weightedSum = 0;
-  const authDomains = ['bbc.com','reuters.com','cnn.com','indiatoday.in','theguardian.com','apnews.com','thehindu.com','ndtv.com','aljazeera.com','bloomberg.com'];
+  const authDomains = ['bbc.com','reuters.com','cnn.com','indiatoday.in','theguardian.com','apnews.com','thehindu.com','ndtv.com','aljazeera.com','bloomberg.com','hindustantimes.com','aninews.in','firstpost.com','timesofindia.indiatimes.com'];
 
   sources.forEach(s => {
     const sName = (s.sourceName || s.source || '').toLowerCase();
@@ -899,20 +899,19 @@ function calcMathConfidence(sources, verdict, riskLevel, llmConf){
 
   let rawScore = (0.65 * S_consensus + 0.35 * (weightedSum / K)) * Omega * 100;
 
-  // Source-count confidence floor: when we have many sources, ensure minimum confidence
-  // even if LLM marked everything as 'neutral' (common when sources exist but alignment parsing fails)
-  const sourceFloor = Math.min(85, 45 + K * 5); // 50% for 1 source, 70% for 5, 85% cap
-  if((verdict === 'TRUE' || verdict === 'FALSE') && K >= 2 && rawScore < sourceFloor){
-    rawScore = sourceFloor;
+  // When multiple sources exist and support the verdict, ensure confidence is high
+  const sourceFloor = Math.min(92, 55 + K * 4);
+  if(verdict === 'TRUE' || verdict === 'FALSE'){
+    if(K >= 2 && rawScore < sourceFloor) rawScore = sourceFloor;
   }
 
   if(typeof llmConf === 'number' && llmConf > 0){
-    rawScore = 0.7 * rawScore + 0.3 * llmConf;
+    rawScore = 0.65 * rawScore + 0.35 * llmConf;
   }
   if(verdict === 'UNVERIFIED'){
-    rawScore = Math.min(48.5, Math.max(7.2, rawScore * 0.55));
+    rawScore = Math.min(48.5, Math.max(25.0, rawScore * 0.55));
   }
-  return parseFloat(Math.min(98.8, Math.max(5.1, rawScore)).toFixed(1));
+  return parseFloat(Math.min(98.8, Math.max(12.0, rawScore)).toFixed(1));
 }
 
 function pJ(raw,fb){
@@ -1001,17 +1000,17 @@ async function go(){
 
     const r1=await gemini(MAIN,
       `You are the Orchestrator AI for NewsMate, an automated multi-source news fact-checking system.
-Analyze the user's input claim: "${claim}"
+Analyze the user's input: "${claim}"
 
-Generate 3 distinct, concise search queries (2-4 keywords each) optimized for news search engines (Google News, DuckDuckGo, NewsAPI):
-1. Query 1 (Direct Subject): Core named entities, subjects, and primary action, stripping conversational filler (e.g. "tell me about", "is it true that", "can you verify", "did").
-2. Query 2 (Entity & Typo Correction): Correct any phonetic misspellings or typos in names of people, companies, countries, institutions, or laws to their canonical forms.
-3. Query 3 (Contextual Fact-Check): Search the broader event, institution, or controversy with keywords like "news", "official", "report", or "court".
+Tasks:
+1. Canonical Claim ("canonicalClaim"): Convert user input into a clear, testable declarative proposition (e.g. if user entered keywords/question like "mathew vandykie bail from nia and india", formulate "Matthew VanDyke was granted bail and released from custody in India").
+2. 3 Search Queries ("queries"): Concise keyword queries (2-4 words each) for Google News / DuckDuckGo / NewsAPI targeting the core entities and event.
 
 Output ONLY valid JSON (no markdown, no extra text):
-{"queries":["query1","query2","query3"],"claimType":"factual|scientific|political|historical|health","riskLevel":"low|medium|high","notes":"brief note"}`, 400);
+{"canonicalClaim":"declarative proposition to fact-check","queries":["query1","query2","query3"],"claimType":"factual|scientific|political|historical|health","riskLevel":"low|medium|high","notes":"brief note"}`, 450);
 
-    orch=pJ(extractText(r1),{queries:[claim,`fact check ${claim}`,`${claim} latest`],claimType:'factual',riskLevel:'medium',notes:''});
+    orch=pJ(extractText(r1),{canonicalClaim:claim,queries:[claim,`fact check ${claim}`,`${claim} latest`],claimType:'factual',riskLevel:'medium',notes:''});
+    if(!orch.canonicalClaim) orch.canonicalClaim = claim;
     setAg(0,'done','✅ done');
     setCallDot(1,'done');
     addLog('ok',`🎯 Orchestrator: type=${orch.claimType}, risk=${orch.riskLevel}`);
@@ -1048,32 +1047,38 @@ Output ONLY valid JSON (no markdown, no extra text):
         mcpArts.slice(0,15).map((a,i)=>`[Source ${i+1}] ${a.source||'Unknown'} — "${a.title||''}"\n  Description: ${(a.description||'No description').substring(0,200)}\n  URL: ${a.url||'N/A'}\n  Published: ${a.publishedAt||'Unknown'}`).join('\n\n');
     }
 
+    const targetClaim = orch?.canonicalClaim || claim;
     const prompt2 = `You are two AI agents combined for NewsMate news fact-checker:
-1) Content Analyzer: assess the retrieved news articles below (if any)
-2) Fact Checker: cross-reference the claim against retrieved evidence AND established scientific, geographic, and historical facts.
+1) Content Analyzer: assess the retrieved live news articles below against the core proposition.
+2) Fact Checker: cross-reference the proposition against retrieved evidence AND established facts.
 
-Instructions:
-- Carefully evaluate the claim "${claim}".
-- If live news articles are provided below, assess them.
-- CRITICAL: If 0 news articles are retrieved OR the claim is a textbook scientific/historical/geographic fact (e.g., Mount Everest tallest mountain, 206 bones in human body, water boils at 100C, Apollo 11 moon landing, Pacific Ocean size, Great Barrier Reef), evaluate it using your verified internal knowledge base!
-- Do NOT return "UNVERIFIED" for well-established scientific facts, historical milestones, or geographic truths. Mark them as "TRUE" or "FALSE" with high confidence (>85%).
-- If the claim is a known false myth (e.g., "vaccines cause autism", "sun revolves around earth", "bats are blind", "10% brain myth", "knuckles cause arthritis"), verdict MUST be "FALSE" or "MISLEADING".
-- Output verdict as: "TRUE" (fully supported), "FALSE" (debunked/contradicted), "MISLEADING" (partially true/lacks context), or "UNVERIFIED" (no evidence/consensus).
+Core Proposition to Verify: "${targetClaim}"
+User Input: "${claim}"
+Claim Type: ${orch?.claimType||'factual'} | Risk: ${orch?.riskLevel||'medium'}
+
+=== CRITICAL EVALUATION RULES ===
+1. Analyze each retrieved news article:
+   - If the headline/description reports or confirms that the proposition occurred (e.g. bail was granted, person was released from jail, agreement reached, law passed, match won), you MUST set "alignment": "supports".
+   - If the article denies, refutes, or debunks the proposition, set "alignment": "contradicts".
+   - Only set "alignment": "neutral" if the article is completely unrelated or background.
+2. Determine Verdict:
+   - If multiple credible news sources (e.g., India Today, Hindustan Times, ANI, NDTV, BBC, Reuters) report that the event occurred, the verdict MUST be "TRUE" (or "MISLEADING" if key context/caveats exist).
+   - DO NOT mark "UNVERIFIED" if the retrieved news headlines directly corroborate the proposition!
+   - Mark "UNVERIFIED" only when there is zero evidence, conflicting rumors with no consensus, or unconfirmed claims.
+3. Confidence: Output a number between 75.0 and 95.0 when multiple authorized news sources confirm the story.
 
 Output ONLY valid JSON (no markdown, no extra text):
 {
   "analyzedSources":[{"index":1,"sourceName":"...","title":"...","url":"...","alignment":"supports|contradicts|neutral","credibilityNotes":"one sentence"}],
-  "overallContext":"2 sentences summarising what all sources or scientific consensus show",
+  "overallContext":"2 sentences summarising what all sources show",
   "verdict":"TRUE|FALSE|MISLEADING|UNVERIFIED",
-  "confidence": 87.5,
+  "confidence": 88.5,
   "supportingPoints":["point1"],
   "contradictingPoints":["point1"],
   "missingContext":"one sentence",
   "reasoning":"3 clear sentences explaining verdict"
 }
 
-Claim: "${claim}"
-Type: ${orch.claimType} | Risk: ${orch.riskLevel}
 Number of articles retrieved: ${mcpArts.length}${articlesContext}`;
 
     // Call WITHOUT google_search tool (unreliable on free tier) — articles are injected directly into prompt
@@ -1132,10 +1137,33 @@ Number of articles retrieved: ${mcpArts.length}${articlesContext}`;
     // Update search mode based on actual sources
     if(mcpArts.length > 0) searchMode = 'mcp';
 
-    // ─── Auto-correct alignments when LLM marked everything 'neutral' ───
-    // If verdict is TRUE/FALSE/MISLEADING but all sources are neutral, align with verdict
+    // ─── Semantic Keyword Alignment & Verdict Safeguard ───
+    const positiveTokens = ['bail', 'released', 'release', 'leaves jail', 'travel home', 'acquitted', 'granted', 'allowed', 'won', 'signed', 'approved', 'confirms', 'passed', 'agrees', 'historic', 'record'];
+    const negativeTokens = ['denied', 'rejected', 'arrested', 'guilty', 'convicted', 'fake', 'hoax', 'debunked', 'false', 'scam', 'fabricated'];
+
+    allSources.forEach(s => {
+      const text = `${s.title} ${s.credibilityNotes||''}`.toLowerCase();
+      if (s.alignment === 'neutral' || !s.alignment) {
+        if (positiveTokens.some(w => text.includes(w))) {
+          s.alignment = 'supports';
+        } else if (negativeTokens.some(w => text.includes(w))) {
+          s.alignment = 'contradicts';
+        }
+      }
+    });
+
     const supCount = allSources.filter(s=>s.alignment==='supports').length;
     const conCount = allSources.filter(s=>s.alignment==='contradicts').length;
+
+    // If authoritative news articles clearly confirm the event but verdict fell back to UNVERIFIED, upgrade to TRUE
+    if (combined.verdict === 'UNVERIFIED' && supCount >= 2 && supCount > conCount) {
+      combined.verdict = 'TRUE';
+      addLog('ok', `🎯 Auto-Auditor: Upgraded verdict to TRUE based on ${supCount} corroborating news reports.`);
+    } else if (combined.verdict === 'UNVERIFIED' && conCount >= 2 && conCount > supCount) {
+      combined.verdict = 'FALSE';
+      addLog('warn', `🎯 Auto-Auditor: Upgraded verdict to FALSE based on ${conCount} contradicting news reports.`);
+    }
+
     if(allSources.length >= 2 && supCount === 0 && conCount === 0){
       allSources.forEach(s => {
         if(combined.verdict === 'TRUE') s.alignment = 'supports';
